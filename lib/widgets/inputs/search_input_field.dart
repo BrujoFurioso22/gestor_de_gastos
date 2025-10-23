@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
-import '../constants/app_constants.dart';
+import '../../constants/app_constants.dart';
 
 class SearchInputField extends StatelessWidget {
   final TextEditingController controller;

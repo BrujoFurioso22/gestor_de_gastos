@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:hugeicons/styles/stroke_rounded.dart';
 import '../providers/app_config_provider.dart';
 import '../providers/settings_provider.dart';
 import 'main_navigation.dart';
@@ -102,8 +104,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       children: [
                         // Icono principal
                         const Center(
-                          child: Icon(
-                            Icons.account_balance_wallet,
+                          child: HugeIcon(
+                            icon: HugeIconsStrokeRounded.wallet01,
                             size: 50,
                             color: Colors.white,
                           ),

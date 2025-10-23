@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
-import '../utils/app_formatters.dart';
-import '../services/simple_localization.dart';
-import '../constants/app_constants.dart';
+import '../../utils/app_formatters.dart';
+import '../../services/simple_localization.dart';
+import '../../constants/app_constants.dart';
 
 class TransactionChart extends ConsumerWidget {
   final double income;

@@ -8,7 +8,6 @@ import '../providers/app_config_provider.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
 import 'categories_screen.dart';
-import 'manage_subscriptions_screen.dart';
 import '../services/hive_service.dart';
 import '../providers/category_provider.dart';
 
@@ -173,17 +172,17 @@ class SettingsScreen extends ConsumerWidget {
             context,
             ref,
             SimpleLocalization.getText(ref, 'manageCategories'),
-            'Crear y editar categorías personalizadas',
+            SimpleLocalization.getText(ref, 'createAndEditCustomCategories'),
             HugeIconsStrokeRounded.tag01,
             () => _navigateToCategories(context),
           ),
           _buildListTile(
             context,
             ref,
-            SimpleLocalization.getText(ref, 'manageSubscriptions'),
-            'Gestionar suscripciones y pagos habituales',
-            HugeIconsStrokeRounded.refresh,
-            () => _navigateToSubscriptions(context),
+            'Restaurar Categorías',
+            'Restaurar categorías por defecto (elimina categorías personalizadas)',
+            HugeIconsStrokeRounded.arrowLeft01,
+            () => _showRestoreCategoriesDialog(context, ref),
           ),
         ]),
 
@@ -258,7 +257,7 @@ class SettingsScreen extends ConsumerWidget {
               context,
               ref,
               SimpleLocalization.getText(ref, 'subscriptionReminders'),
-              '${appConfig.subscriptionReminderDays} ${SimpleLocalization.getText(ref, 'daysBefore')}',
+              '${appConfig.subscriptionReminderDays} ${appConfig.subscriptionReminderDays == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'before')}',
               HugeIconsStrokeRounded.notification01,
               () => _showReminderDaysDialog(context, ref),
             ),
@@ -575,7 +574,7 @@ class SettingsScreen extends ConsumerWidget {
           children: days.map((day) {
             return RadioListTile<int>(
               title: Text(
-                '$day ${day == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'daysBefore')}',
+                '$day ${day == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'before')}',
               ),
               value: day,
               groupValue: ref.read(appConfigProvider).subscriptionReminderDays,
@@ -797,11 +796,40 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateToSubscriptions(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ManageSubscriptionsScreen(),
+  void _showRestoreCategoriesDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restaurar Categorías'),
+        content: const Text(
+          '¿Estás seguro de que quieres restaurar las categorías por defecto?\n\n'
+          'Esto eliminará todas las categorías personalizadas que hayas creado.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await HiveService.restoreDefaultCategories();
+                ref.read(categoriesProvider.notifier).refresh();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Categorías restauradas correctamente'),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error al restaurar categorías: $e')),
+                );
+              }
+            },
+            child: const Text('Restaurar'),
+          ),
+        ],
       ),
     );
   }

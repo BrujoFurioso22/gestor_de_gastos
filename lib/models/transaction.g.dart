@@ -19,7 +19,7 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
     return Transaction(
       id: fields[0] as String?,
       type: fields[1] as TransactionType,
-      title: fields[2] as String,
+      title: fields[2] as String?,
       amount: fields[3] as double,
       category: fields[4] as String,
       date: fields[5] as DateTime,

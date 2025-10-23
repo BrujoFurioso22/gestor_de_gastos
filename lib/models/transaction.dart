@@ -12,7 +12,7 @@ class Transaction extends HiveObject {
   final TransactionType type;
 
   @HiveField(2)
-  final String title;
+  final String? title;
 
   @HiveField(3)
   final double amount;
@@ -35,7 +35,7 @@ class Transaction extends HiveObject {
   Transaction({
     String? id,
     required this.type,
-    required this.title,
+    this.title,
     required this.amount,
     required this.category,
     required this.date,

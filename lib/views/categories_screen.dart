@@ -5,9 +5,11 @@ import '../models/transaction.dart';
 import '../providers/category_provider.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
-import '../widgets/add_category_dialog.dart';
-import '../widgets/icon_selector_widget.dart';
+import '../widgets/forms/category_form.dart';
+import '../widgets/inputs/custom_floating_action_button.dart';
+import '../utils/icon_utils.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:hugeicons/styles/stroke_rounded.dart';
 
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
@@ -20,20 +22,16 @@ class CategoriesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(SimpleLocalization.getText(ref, 'manageCategories')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showAddCategoryDialog(context, ref),
-          ),
-        ],
+        leading: IconButton(
+          icon: const HugeIcon(icon: HugeIconsStrokeRounded.arrowLeft01),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: categories.isEmpty
           ? _buildEmptyState(context, ref, theme)
           : _buildCategoriesList(context, ref, categories, theme),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AddFloatingActionButton(
         onPressed: () => _showAddCategoryDialog(context, ref),
-        icon: const Icon(Icons.add),
-        label: Text(SimpleLocalization.getText(ref, 'addCategory')),
       ),
     );
   }
@@ -47,8 +45,8 @@ class CategoriesScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.category_outlined,
+          HugeIcon(
+            icon: HugeIconsStrokeRounded.folder01,
             size: 80,
             color: theme.colorScheme.primary.withOpacity(0.5),
           ),
@@ -70,7 +68,7 @@ class CategoriesScreen extends ConsumerWidget {
           const SizedBox(height: AppConstants.largePadding),
           ElevatedButton.icon(
             onPressed: () => _showAddCategoryDialog(context, ref),
-            icon: const Icon(Icons.add),
+            icon: const HugeIcon(icon: HugeIconsStrokeRounded.add01, size: 20),
             label: Text(SimpleLocalization.getText(ref, 'addCategory')),
           ),
         ],
@@ -183,7 +181,7 @@ class CategoriesScreen extends ConsumerWidget {
               value: 'edit',
               child: Row(
                 children: [
-                  const Icon(Icons.edit),
+                  const HugeIcon(icon: HugeIconsStrokeRounded.edit01, size: 20),
                   const SizedBox(width: 8),
                   Text(SimpleLocalization.getText(ref, 'editCategory')),
                 ],
@@ -193,7 +191,11 @@ class CategoriesScreen extends ConsumerWidget {
               value: 'delete',
               child: Row(
                 children: [
-                  const Icon(Icons.delete, color: Colors.red),
+                  const HugeIcon(
+                    icon: HugeIconsStrokeRounded.delete01,
+                    size: 20,
+                    color: Colors.red,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     SimpleLocalization.getText(ref, 'deleteCategory'),
@@ -225,17 +227,10 @@ class CategoriesScreen extends ConsumerWidget {
   }
 
   void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AddCategoryDialog(
-        onCategoryAdded: (category) {
-          ref.read(categoriesProvider.notifier).addCategory(category);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(SimpleLocalization.getText(ref, 'categoryCreated')),
-            ),
-          );
-        },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CategoryFormPage(isEdit: false),
       ),
     );
   }
@@ -245,18 +240,11 @@ class CategoriesScreen extends ConsumerWidget {
     WidgetRef ref,
     Category category,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => AddCategoryDialog(
-        category: category,
-        onCategoryAdded: (updatedCategory) {
-          ref.read(categoriesProvider.notifier).updateCategory(updatedCategory);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(SimpleLocalization.getText(ref, 'categoryUpdated')),
-            ),
-          );
-        },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            CategoryFormPage(category: category, isEdit: true),
       ),
     );
   }

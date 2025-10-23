@@ -130,6 +130,18 @@ class HiveService {
     await _updateExistingCategories();
   }
 
+  /// Restaura las categorías por defecto (elimina todas las categorías personalizadas)
+  static Future<void> restoreDefaultCategories() async {
+    // Limpiar todas las categorías existentes
+    await _categoriesBox.clear();
+
+    // Agregar las categorías por defecto
+    final defaultCategories = DefaultCategories.allCategories;
+    for (final category in defaultCategories) {
+      await _categoriesBox.put(category.id, category);
+    }
+  }
+
   /// Obtiene todas las transacciones
   static List<Transaction> getAllTransactions() {
     return _transactionsBox.values.toList();
@@ -253,7 +265,8 @@ class HiveService {
     return _transactionsBox.values
         .where(
           (transaction) =>
-              transaction.title.toLowerCase().contains(lowercaseQuery) ||
+              (transaction.title?.toLowerCase().contains(lowercaseQuery) ??
+                  false) ||
               (transaction.notes?.toLowerCase().contains(lowercaseQuery) ??
                   false),
         )

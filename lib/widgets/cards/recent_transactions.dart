@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
-import '../models/transaction.dart';
-import '../utils/app_formatters.dart';
-import '../services/simple_localization.dart';
-import '../constants/app_constants.dart';
-import 'edit_transaction_sheet.dart';
+import '../../models/transaction.dart';
+import '../../providers/category_provider.dart';
+import '../../utils/app_formatters.dart';
+import '../../services/simple_localization.dart';
+import '../../constants/app_constants.dart';
+import '../forms/transaction_form.dart';
 
 class RecentTransactions extends ConsumerWidget {
   final List<Transaction> transactions;
@@ -80,11 +81,20 @@ class RecentTransactions extends ConsumerWidget {
             size: 20,
           ),
         ),
-        title: Text(
-          transaction.title,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+        title: Consumer(
+          builder: (context, ref, child) {
+            final category = ref.watch(
+              categoryByIdProvider(transaction.category),
+            );
+            final displayTitle =
+                transaction.title ?? category?.name ?? 'Sin título';
+            return Text(
+              displayTitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          },
         ),
         subtitle: Text(
           AppFormatters.formatDate(transaction.date, ref),

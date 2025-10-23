@@ -7,9 +7,10 @@ import '../providers/subscription_provider.dart';
 import '../utils/app_formatters.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
-import '../widgets/add_subscription_sheet.dart';
-import '../widgets/subscription_card.dart';
-import '../widgets/search_input_field.dart';
+import '../widgets/forms/subscription_form.dart';
+import '../widgets/cards/subscription_card.dart';
+import '../widgets/inputs/search_input_field.dart';
+import '../widgets/inputs/custom_floating_action_button.dart';
 
 class SubscriptionsScreen extends ConsumerStatefulWidget {
   const SubscriptionsScreen({super.key});
@@ -51,6 +52,41 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           IconButton(
             icon: HugeIcon(icon: HugeIconsStrokeRounded.filter, size: 20),
             onPressed: _showFilterDialog,
+          ),
+          PopupMenuButton<String>(
+            icon: HugeIcon(icon: HugeIconsStrokeRounded.menu01, size: 20),
+            onSelected: (value) {
+              switch (value) {
+                case 'manage':
+                  _showManageOptions(context, ref);
+                  break;
+                case 'export':
+                  _exportSubscriptions(ref);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'manage',
+                child: Row(
+                  children: [
+                    HugeIcon(icon: HugeIconsStrokeRounded.settings01, size: 18),
+                    const SizedBox(width: 8),
+                    Text(SimpleLocalization.getText(ref, 'manage')),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    HugeIcon(icon: HugeIconsStrokeRounded.download01, size: 18),
+                    const SizedBox(width: 8),
+                    Text(SimpleLocalization.getText(ref, 'export')),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
         bottom: TabBar(
@@ -101,10 +137,9 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AddFloatingActionButton(
         onPressed: _showAddSubscriptionDialog,
-        icon: HugeIcon(icon: HugeIconsStrokeRounded.add01, size: 20),
-        label: Text(SimpleLocalization.getText(ref, 'add')),
+        // label: SimpleLocalization.getText(ref, 'add'), // Descomenta si quieres label
       ),
     );
   }
@@ -112,8 +147,7 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
   Widget _buildStatsCards(ThemeData theme, SubscriptionStats stats) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
-        vertical: AppConstants.smallPadding,
+        horizontal: AppConstants.defaultPadding, // Reducido de AppConstants.smallPadding a 4
       ),
       child: Row(
         children: [
@@ -122,27 +156,27 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
               theme,
               SimpleLocalization.getText(ref, 'monthlyCost'),
               AppFormatters.formatCurrency(stats.totalMonthlyCost, ref),
-              HugeIconsStrokeRounded.calendar01,
+              null, // Ya no necesitamos el icono
               theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(width: AppConstants.smallPadding),
+          const SizedBox(width: 2),
           Expanded(
             child: _buildStatCard(
               theme,
               SimpleLocalization.getText(ref, 'yearlyCost'),
               AppFormatters.formatCurrency(stats.totalYearlyCost, ref),
-              HugeIconsStrokeRounded.calendar01,
+              null, // Ya no necesitamos el icono
               theme.colorScheme.secondary,
             ),
           ),
-          const SizedBox(width: AppConstants.smallPadding),
+          const SizedBox(width: 2),
           Expanded(
             child: _buildStatCard(
               theme,
               SimpleLocalization.getText(ref, 'active'),
               '${stats.activeSubscriptions}',
-              HugeIconsStrokeRounded.star,
+              null, // Ya no necesitamos el icono
               Colors.green,
             ),
           ),
@@ -155,30 +189,33 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
     ThemeData theme,
     String title,
     String value,
-    List<List<dynamic>> icon,
+    List<List<dynamic>>? icon, // Hacer el icono opcional
     Color color,
   ) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.smallPadding),
+        padding: const EdgeInsets.all(6), // Reducido aún más de 8 a 6
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            HugeIcon(icon: icon, color: color, size: 20),
-            const SizedBox(height: 4),
             Text(
               value,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
+                fontSize: 14, // Aumentado ligeramente ya que no hay icono
               ),
             ),
+            const SizedBox(height: 2), // Espaciado mínimo
             Text(
               title,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 10,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -282,7 +319,7 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           top: Radius.circular(AppConstants.borderRadius),
         ),
       ),
-      builder: (context) => const AddSubscriptionSheet(),
+      builder: (context) => const SubscriptionForm(isEdit: false),
     );
   }
 
@@ -295,7 +332,8 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           top: Radius.circular(AppConstants.borderRadius),
         ),
       ),
-      builder: (context) => AddSubscriptionSheet(subscription: subscription),
+      builder: (context) =>
+          SubscriptionForm(subscription: subscription, isEdit: true),
     );
   }
 
@@ -415,6 +453,110 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// Muestra opciones de gestión
+  void _showManageOptions(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: HugeIcon(icon: HugeIconsStrokeRounded.edit01, size: 20),
+              title: Text(SimpleLocalization.getText(ref, 'editAll')),
+              onTap: () {
+                Navigator.pop(context);
+                _showBulkEditDialog(context, ref);
+              },
+            ),
+            ListTile(
+              leading: HugeIcon(
+                icon: HugeIconsStrokeRounded.delete01,
+                size: 20,
+              ),
+              title: Text(SimpleLocalization.getText(ref, 'deleteAll')),
+              onTap: () {
+                Navigator.pop(context);
+                _showBulkDeleteDialog(context, ref);
+              },
+            ),
+            ListTile(
+              leading: HugeIcon(
+                icon: HugeIconsStrokeRounded.download01,
+                size: 20,
+              ),
+              title: Text(SimpleLocalization.getText(ref, 'exportData')),
+              onTap: () {
+                Navigator.pop(context);
+                _exportSubscriptions(ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Muestra diálogo de edición masiva
+  void _showBulkEditDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(SimpleLocalization.getText(ref, 'bulkEdit')),
+        content: Text(SimpleLocalization.getText(ref, 'bulkEditDescription')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Implementar edición masiva
+            },
+            child: Text(SimpleLocalization.getText(ref, 'edit')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Muestra diálogo de eliminación masiva
+  void _showBulkDeleteDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(SimpleLocalization.getText(ref, 'bulkDelete')),
+        content: Text(SimpleLocalization.getText(ref, 'bulkDeleteDescription')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Implementar eliminación masiva
+            },
+            child: Text(SimpleLocalization.getText(ref, 'delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Exporta las suscripciones
+  void _exportSubscriptions(WidgetRef ref) {
+    // Implementar exportación
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(SimpleLocalization.getText(ref, 'exportStarted'))),
     );
   }
 }

@@ -90,28 +90,28 @@ class DefaultCategories {
     Category(
       id: 'income_salary',
       name: 'Salario',
-      icon: 'briefcase',
+      icon: 'briefcase01',
       color: '#81C784', // Verde pastel
       type: TransactionType.income,
     ),
     Category(
       id: 'income_freelance',
       name: 'Freelance',
-      icon: 'laptop',
+      icon: 'laptop01',
       color: '#90CAF9', // Azul pastel
       type: TransactionType.income,
     ),
     Category(
       id: 'income_investment',
       name: 'Inversión',
-      icon: 'trending_up',
+      icon: 'wallet01',
       color: '#FFB74D', // Naranja pastel
       type: TransactionType.income,
     ),
     Category(
       id: 'income_other',
       name: 'Otros',
-      icon: 'money',
+      icon: 'bank',
       color: '#CE93D8', // Púrpura pastel
       type: TransactionType.income,
     ),
@@ -121,56 +121,56 @@ class DefaultCategories {
     Category(
       id: 'expense_food',
       name: 'Alimentación',
-      icon: 'restaurant',
+      icon: 'restaurant01',
       color: '#FFCDD2', // Rojo pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_transport',
       name: 'Transporte',
-      icon: 'car',
+      icon: 'car01',
       color: '#FFE0B2', // Naranja pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_entertainment',
       name: 'Entretenimiento',
-      icon: 'tv',
+      icon: 'entertainment01',
       color: '#F8BBD9', // Rosa pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_health',
       name: 'Salud',
-      icon: 'hospital',
+      icon: 'hospital01',
       color: '#B2EBF2', // Cian pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_education',
       name: 'Educación',
-      icon: 'book',
+      icon: 'education01',
       color: '#C5CAE9', // Índigo pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_shopping',
       name: 'Compras',
-      icon: 'shopping_cart',
+      icon: 'shoppingCart01',
       color: '#D7CCC8', // Marrón pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_bills',
       name: 'Servicios',
-      icon: 'home',
+      icon: 'home07',
       color: '#B0BEC5', // Gris pastel
       type: TransactionType.expense,
     ),
     Category(
       id: 'expense_other',
       name: 'Otros',
-      icon: 'coffee',
+      icon: 'food01',
       color: '#E1BEE7', // Púrpura pastel
       type: TransactionType.expense,
     ),

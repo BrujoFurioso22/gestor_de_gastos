@@ -19,6 +19,7 @@ class SimpleLocalization {
   }
 
   static const Map<String, Map<String, String>> _translations = {
+    'before':{'esp': 'antes', 'eng': 'before'},
     'appTitle': {'esp': 'MiControl', 'eng': 'MiControl'},
     'dashboard': {'esp': 'Inicio', 'eng': 'Dashboard'},
     'history': {'esp': 'Historial', 'eng': 'History'},
@@ -389,9 +390,17 @@ class SimpleLocalization {
       'esp': 'Agrega tu primera categoría',
       'eng': 'Add your first category',
     },
+    'category':{
+      'esp': 'Categoría',
+      'eng': 'Category',
+    },
     'manageSubscriptions': {
       'esp': 'Gestionar Suscripciones',
       'eng': 'Manage Subscriptions',
+    },
+    'date':{
+      'esp': 'Fecha',
+      'eng': 'Date',
     },
     'startDate': {'esp': 'Fecha de inicio', 'eng': 'Start date'},
     'endDate': {'esp': 'Fecha de fin (opcional)', 'eng': 'End date (optional)'},
@@ -423,6 +432,62 @@ class SimpleLocalization {
     'noSubscriptionsFound': {
       'esp': 'No se encontraron suscripciones',
       'eng': 'No subscriptions found',
+    },
+    // Hint texts for forms
+    'titleHint': {
+      'esp': 'Ej: Comida, Transporte, Salario...',
+      'eng': 'Ex: Food, Transport, Salary...',
+    },
+    'transactionNotesHint': {
+      'esp': 'Información adicional sobre la transacción...',
+      'eng': 'Additional information about the transaction...',
+    },
+    'categoryNameHint': {
+      'esp': 'Ej: Alimentación, Transporte, Entretenimiento...',
+      'eng': 'Ex: Food, Transport, Entertainment...',
+    },
+    'subscriptionDescriptionHint': {
+      'esp': 'Descripción breve de la suscripción...',
+      'eng': 'Brief description of the subscription...',
+    },
+    'subscriptionNotesHint': {
+      'esp': 'Información adicional sobre la suscripción...',
+      'eng': 'Additional information about the subscription...',
+    },
+    // Additional missing keys
+    'optional': {'esp': 'opcional', 'eng': 'optional'},
+    'nameRequired': {
+      'esp': 'El nombre es obligatorio',
+      'eng': 'Name is required',
+    },
+    'invalidAmount': {'esp': 'Monto inválido', 'eng': 'Invalid amount'},
+    'title': {'esp': 'Título', 'eng': 'Title'},
+    'amount': {'esp': 'Monto', 'eng': 'Amount'},
+    'notes': {'esp': 'Notas', 'eng': 'Notes'},
+    'description': {'esp': 'Descripción', 'eng': 'Description'},
+    'frequency': {'esp': 'Frecuencia', 'eng': 'Frequency'},
+    'hasEndDate': {'esp': 'Tiene fecha de fin', 'eng': 'Has end date'},
+    'selectDate': {'esp': 'Seleccionar fecha', 'eng': 'Select date'},
+    'update': {'esp': 'Actualizar', 'eng': 'Update'},
+    'transactionUpdated': {
+      'esp': 'Transacción actualizada correctamente',
+      'eng': 'Transaction updated successfully',
+    },
+    'transactionAdded': {
+      'esp': 'Transacción agregada correctamente',
+      'eng': 'Transaction added successfully',
+    },
+    'subscriptionAdded': {
+      'esp': 'Suscripción agregada correctamente',
+      'eng': 'Subscription added successfully',
+    },
+    'categoryAdded': {
+      'esp': 'Categoría agregada correctamente',
+      'eng': 'Category added successfully',
+    },
+    'createAndEditCustomCategories': {
+      'esp': 'Crear y editar categorías personalizadas',
+      'eng': 'Create and edit custom categories',
     },
   };
 }

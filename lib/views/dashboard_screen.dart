@@ -5,10 +5,12 @@ import 'package:hugeicons/styles/stroke_rounded.dart';
 import '../providers/transaction_provider.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
-import '../widgets/balance_card.dart';
-import '../widgets/transaction_chart.dart';
-import '../widgets/recent_transactions.dart';
-import '../widgets/add_transaction_fab.dart';
+import '../widgets/cards/balance_card.dart';
+import '../widgets/charts/transaction_chart.dart';
+import '../widgets/cards/recent_transactions.dart';
+import '../services/feedback_service.dart';
+import '../widgets/inputs/custom_floating_action_button.dart';
+import '../widgets/forms/transaction_form.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -65,7 +67,31 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: const AddTransactionFAB(),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          FeedbackService.buttonFeedback(ref);
+          _showAddTransactionDialog(context, ref);
+        },
+        iconSize: 20,
+      ),
+    );
+  }
+
+  void _showAddTransactionDialog(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: const TransactionForm(isEdit: false),
+      ),
     );
   }
 }

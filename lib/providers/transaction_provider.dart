@@ -59,7 +59,8 @@ final searchTransactionsProvider = Provider.family<List<Transaction>, String>((
 
   final lowercaseQuery = query.toLowerCase();
   return transactions.where((transaction) {
-    return transaction.title.toLowerCase().contains(lowercaseQuery) ||
+    return (transaction.title?.toLowerCase().contains(lowercaseQuery) ??
+            false) ||
         (transaction.notes?.toLowerCase().contains(lowercaseQuery) ?? false);
   }).toList();
 });
@@ -183,7 +184,7 @@ List<Transaction> _filterTransactions(
     // Filtro por búsqueda
     if (filter.searchQuery != null && filter.searchQuery!.isNotEmpty) {
       final query = filter.searchQuery!.toLowerCase();
-      if (!transaction.title.toLowerCase().contains(query) &&
+      if (!(transaction.title?.toLowerCase().contains(query) ?? false) &&
           !(transaction.notes?.toLowerCase().contains(query) ?? false)) {
         return false;
       }

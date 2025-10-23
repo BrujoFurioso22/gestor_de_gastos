@@ -4,11 +4,12 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/category_provider.dart';
 import '../utils/app_formatters.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
-import '../widgets/edit_transaction_sheet.dart';
-import '../widgets/search_input_field.dart';
+import '../widgets/forms/transaction_form.dart';
+import '../widgets/inputs/search_input_field.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -107,11 +108,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 : theme.colorScheme.error,
           ),
         ),
-        title: Text(
-          transaction.title,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+        title: Consumer(
+          builder: (context, ref, child) {
+            final category = ref.watch(
+              categoryByIdProvider(transaction.category),
+            );
+            final displayTitle =
+                transaction.title ?? category?.name ?? 'Sin título';
+            return Text(
+              displayTitle,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          },
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,11 +282,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(SimpleLocalization.getText(ref, 'deleteTransaction')),
-        content: Text(
-          SimpleLocalization.getText(
-            ref,
-            'deleteTransactionConfirm',
-          ).replaceAll('{title}', transaction.title),
+        content: Consumer(
+          builder: (context, ref, child) {
+            final category = ref.watch(
+              categoryByIdProvider(transaction.category),
+            );
+            final displayTitle =
+                transaction.title ?? category?.name ?? 'Sin título';
+            return Text(
+              SimpleLocalization.getText(
+                ref,
+                'deleteTransactionConfirm',
+              ).replaceAll('{title}', displayTitle),
+            );
+          },
         ),
         actions: [
           TextButton(
