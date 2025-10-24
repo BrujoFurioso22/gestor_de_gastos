@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/subscription.dart';
+import '../models/transaction.dart';
 import '../services/hive_service.dart';
+import '../services/timer_service.dart';
+import 'transaction_provider.dart';
 
 /// Provider para todas las suscripciones
 final subscriptionsProvider =
@@ -69,6 +72,18 @@ final searchSubscriptionsProvider = Provider.family<List<Subscription>, String>(
 class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
   SubscriptionNotifier() : super([]) {
     _loadSubscriptions();
+    // Procesar pagos automáticos al inicializar
+    processAutomaticPayments();
+    // Programar recordatorios para suscripciones activas
+    _initializeReminders();
+  }
+
+  /// Inicializa los recordatorios para todas las suscripciones activas
+  void _initializeReminders() {
+    // Usar un Future.microtask para evitar problemas de inicialización
+    Future.microtask(() async {
+      await scheduleAllReminders();
+    });
   }
 
   /// Carga todas las suscripciones desde Hive
@@ -83,6 +98,11 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     print('✅ Suscripción guardada en Hive');
     _loadSubscriptions();
     print('📊 Suscripciones cargadas: ${state.length}');
+
+    // Programar recordatorio si está activa
+    if (subscription.isActive) {
+      await scheduleReminder(subscription);
+    }
   }
 
   /// Actualiza una suscripción existente
@@ -91,11 +111,22 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     await HiveService.updateSubscription(subscription);
     print('✅ Suscripción actualizada en Hive');
     _loadSubscriptions();
+
+    // Actualizar recordatorio
+    if (subscription.isActive) {
+      await scheduleReminder(subscription);
+    } else {
+      cancelReminder(subscription.id);
+    }
   }
 
   /// Elimina una suscripción
   Future<void> deleteSubscription(String subscriptionId) async {
     print('🔄 Eliminando suscripción: $subscriptionId');
+
+    // Cancelar recordatorio antes de eliminar
+    cancelReminder(subscriptionId);
+
     await HiveService.deleteSubscription(subscriptionId);
     print('✅ Suscripción eliminada de Hive');
     _loadSubscriptions();
@@ -134,6 +165,103 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
       );
       await updateSubscription(updatedSubscription);
     }
+  }
+
+  /// Procesa pagos automáticos para suscripciones vencidas
+  Future<void> processAutomaticPayments() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (final subscription in state) {
+      if (subscription.isActive &&
+              subscription.nextPaymentDate.isBefore(today) ||
+          subscription.nextPaymentDate.isAtSameMomentAs(today)) {
+        // Procesar pago automático
+        await _processAutomaticPayment(subscription);
+      }
+    }
+  }
+
+  /// Programa recordatorios para todas las suscripciones activas usando Timer
+  Future<void> scheduleAllReminders() async {
+    final activeSubscriptions = state.where((s) => s.isActive).toList();
+    await TimerService.scheduleAllSubscriptionReminders(activeSubscriptions);
+  }
+
+  /// Programa un recordatorio específico usando Timer
+  Future<void> scheduleReminder(Subscription subscription) async {
+    await TimerService.scheduleSubscriptionReminder(
+      subscription,
+      subscription.nextPaymentDate,
+    );
+  }
+
+  /// Cancela un recordatorio específico
+  void cancelReminder(String subscriptionId) {
+    TimerService.cancelSubscriptionReminder(subscriptionId);
+  }
+
+  /// Cancela todos los recordatorios
+  void cancelAllReminders() {
+    TimerService.cancelAllReminders();
+  }
+
+  /// Procesa pagos automáticos para suscripciones vencidas (método público)
+  Future<void> processOverduePayments() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (final subscription in state) {
+      if (subscription.isActive &&
+          (subscription.nextPaymentDate.isBefore(today) ||
+              subscription.nextPaymentDate.isAtSameMomentAs(today))) {
+        await _processAutomaticPayment(subscription);
+      }
+    }
+  }
+
+  /// Procesa un pago automático individual
+  Future<void> _processAutomaticPayment(Subscription subscription) async {
+    // Calcular la nueva fecha de pago
+    final newPaymentDate = _calculateNextPayment(
+      subscription.nextPaymentDate,
+      subscription.frequency,
+    );
+
+    // Actualizar la suscripción con la nueva fecha
+    final updatedSubscription = subscription.copyWith(
+      nextPaymentDate: newPaymentDate,
+    );
+    await updateSubscription(updatedSubscription);
+
+    // Crear transacción automática del pago
+    await _createAutomaticTransaction(subscription);
+
+    // Reprogramar la notificación para el próximo pago
+    await scheduleReminder(updatedSubscription);
+
+    print('💰 Pago automático procesado para: ${subscription.name}');
+    print('📅 Nueva fecha de pago: $newPaymentDate');
+    print('⏰ Recordatorio reprogramado para el próximo pago');
+  }
+
+  /// Crea una transacción automática para el pago de suscripción
+  Future<void> _createAutomaticTransaction(Subscription subscription) async {
+    final transaction = Transaction(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      amount: subscription.amount,
+      description: 'Pago automático - ${subscription.name}',
+      category: 'expense_subscriptions',
+      type: TransactionType.expense,
+      date: DateTime.now(),
+      icon: subscription.icon,
+      color: subscription.color,
+    );
+
+    // Guardar la transacción en Hive
+    await HiveService.addTransaction(transaction);
+
+    print('💳 Transacción automática creada: ${transaction.description}');
   }
 
   /// Obtiene suscripciones por frecuencia

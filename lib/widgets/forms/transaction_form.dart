@@ -48,7 +48,13 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     _notesController.text = transaction.notes ?? '';
     _selectedType = transaction.type;
     _selectedDate = transaction.date;
-    _selectedCategoryId = transaction.category;
+
+    // Verificar que la categoría existe antes de establecerla
+    final categories = ref.read(categoriesProvider);
+    final categoryExists = categories.any(
+      (cat) => cat.id == transaction.category,
+    );
+    _selectedCategoryId = categoryExists ? transaction.category : null;
   }
 
   @override
@@ -65,164 +71,162 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final categories = ref.watch(categoriesProvider);
 
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
+      ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppConstants.borderRadius),
-                  topRight: Radius.circular(AppConstants.borderRadius),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppConstants.smallPadding,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.outline.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  HugeIcon(
-                    icon: widget.isEdit
-                        ? HugeIconsStrokeRounded.edit01
-                        : HugeIconsStrokeRounded.add01,
-                    size: 24,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    widget.isEdit
-                        ? SimpleLocalization.getText(ref, 'editTransaction')
-                        : SimpleLocalization.getText(ref, 'addTransaction'),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            ),
 
-            // Form content
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                children: [
-                  // Transaction type selector
-                  _buildTypeSelector(theme),
+              // Form content
+              Padding(
+                padding: const EdgeInsets.all(AppConstants.smallPadding),
+                child: Column(
+                  children: [
+                    // Transaction type selector
+                    _buildTypeSelector(theme),
 
-                  const SizedBox(height: AppConstants.defaultPadding),
+                    const SizedBox(height: AppConstants.smallPadding),
 
-                  // Title field
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      labelText:
-                          '${SimpleLocalization.getText(ref, 'title')} (${SimpleLocalization.getText(ref, 'optional')})',
-                      hintText: SimpleLocalization.getText(ref, 'titleHint'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
+                    // Title field
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        labelText:
+                            '${SimpleLocalization.getText(ref, 'title')} (${SimpleLocalization.getText(ref, 'optional')})',
+                        hintText: SimpleLocalization.getText(ref, 'titleHint'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: AppConstants.defaultPadding),
+                    const SizedBox(height: AppConstants.smallPadding),
 
-                  // Amount field
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText:
-                          '${SimpleLocalization.getText(ref, 'amount')} *',
-                      prefixText: _getCurrencySymbol(ref),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
+                    // Amount and Date in same row
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText:
+                                  '${SimpleLocalization.getText(ref, 'amount')} *',
+                              prefixText: _getCurrencySymbol(ref),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.borderRadius,
+                                ),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return SimpleLocalization.getText(
+                                  ref,
+                                  'amountRequired',
+                                );
+                              }
+                              if (double.tryParse(value) == null) {
+                                return SimpleLocalization.getText(
+                                  ref,
+                                  'invalidAmount',
+                                );
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(flex: 3, child: _buildDateSelector(theme)),
+                      ],
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return SimpleLocalization.getText(
+
+                    const SizedBox(height: AppConstants.smallPadding),
+
+                    // Category selector
+                    _buildCategorySelector(theme, categories),
+
+                    const SizedBox(height: AppConstants.smallPadding),
+
+                    // Notes field
+                    TextFormField(
+                      controller: _notesController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText:
+                            '${SimpleLocalization.getText(ref, 'notes')} (${SimpleLocalization.getText(ref, 'optional')})',
+                        hintText: SimpleLocalization.getText(
                           ref,
-                          'amountRequired',
-                        );
-                      }
-                      if (double.tryParse(value) == null) {
-                        return SimpleLocalization.getText(ref, 'invalidAmount');
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: AppConstants.defaultPadding),
-
-                  // Category selector
-                  _buildCategorySelector(theme, categories),
-
-                  const SizedBox(height: AppConstants.defaultPadding),
-
-                  // Date selector
-                  _buildDateSelector(theme),
-
-                  const SizedBox(height: AppConstants.defaultPadding),
-
-                  // Notes field
-                  TextFormField(
-                    controller: _notesController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText:
-                          '${SimpleLocalization.getText(ref, 'notes')} (${SimpleLocalization.getText(ref, 'optional')})',
-                      hintText: SimpleLocalization.getText(
-                        ref,
-                        'transactionNotesHint',
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
+                          'transactionNotesHint',
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: AppConstants.largePadding),
+                    const SizedBox(height: AppConstants.defaultPadding),
 
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            SimpleLocalization.getText(ref, 'cancel'),
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              SimpleLocalization.getText(ref, 'cancel'),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AppConstants.defaultPadding),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _saveTransaction,
-                          child: Text(
-                            widget.isEdit
-                                ? SimpleLocalization.getText(ref, 'update')
-                                : SimpleLocalization.getText(ref, 'save'),
+                        const SizedBox(width: AppConstants.defaultPadding),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: _saveTransaction,
+                            child: Text(
+                              widget.isEdit
+                                  ? SimpleLocalization.getText(ref, 'update')
+                                  : SimpleLocalization.getText(ref, 'add'),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -61,7 +61,22 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener el estado actual de los anuncios
+    final adsEnabled = ref.watch(adsEnabledProvider);
+
+    // Actualizar anuncios cuando cambie el estado premium
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (adsEnabled && _bannerAd == null) {
+        _initializeAds();
+      } else if (!adsEnabled && _bannerAd != null) {
+        _bannerAd?.dispose();
+        _bannerAd = null;
+        setState(() {});
+      }
+    });
+
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
@@ -75,7 +90,18 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             ),
           // Bottom navigation bar
           BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
             currentIndex: _currentIndex,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            selectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w400,
+              fontSize: 12,
+            ),
             onTap: (index) {
               setState(() {
                 _currentIndex = index;
@@ -83,22 +109,77 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             },
             items: [
               BottomNavigationBarItem(
-                icon: HugeIcon(icon: HugeIconsStrokeRounded.home01, size: 24),
+                icon: _buildNavIcon(
+                  HugeIconsStrokeRounded.home01,
+                  isSelected: _currentIndex == 0,
+                ),
+                activeIcon: _buildNavIcon(
+                  HugeIconsStrokeRounded.home01,
+                  isSelected: true,
+                ),
                 label: SimpleLocalization.getText(ref, 'dashboard'),
               ),
               BottomNavigationBarItem(
-                icon: HugeIcon(icon: HugeIconsStrokeRounded.clock01, size: 24),
+                icon: _buildNavIcon(
+                  HugeIconsStrokeRounded.clock01,
+                  isSelected: _currentIndex == 1,
+                ),
+                activeIcon: _buildNavIcon(
+                  HugeIconsStrokeRounded.clock01,
+                  isSelected: true,
+                ),
                 label: SimpleLocalization.getText(ref, 'history'),
               ),
               BottomNavigationBarItem(
-                icon: HugeIcon(icon: HugeIconsStrokeRounded.money01, size: 24),
+                icon: _buildNavIcon(
+                  HugeIconsStrokeRounded.money01,
+                  isSelected: _currentIndex == 2,
+                ),
+                activeIcon: _buildNavIcon(
+                  HugeIconsStrokeRounded.money01,
+                  isSelected: true,
+                ),
                 label: SimpleLocalization.getText(ref, 'subscriptions'),
               ),
               BottomNavigationBarItem(
-                icon: HugeIcon(icon: HugeIconsStrokeRounded.menu01, size: 24),
+                icon: _buildNavIcon(
+                  HugeIconsStrokeRounded.menu01,
+                  isSelected: _currentIndex == 3,
+                ),
+                activeIcon: _buildNavIcon(
+                  HugeIconsStrokeRounded.menu01,
+                  isSelected: true,
+                ),
                 label: SimpleLocalization.getText(ref, 'settings'),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Construye un ícono de navegación con indicador visual
+  Widget _buildNavIcon(List<List<dynamic>> icon, {required bool isSelected}) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? theme.colorScheme.primary.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HugeIcon(
+            icon: icon,
+            size: 24,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ],
       ),

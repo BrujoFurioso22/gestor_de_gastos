@@ -10,7 +10,6 @@ class SubscriptionCard extends ConsumerWidget {
   final Subscription subscription;
   final VoidCallback? onTap;
   final VoidCallback? onToggleStatus;
-  final VoidCallback? onMarkAsPaid;
   final VoidCallback? onDelete;
 
   const SubscriptionCard({
@@ -18,7 +17,6 @@ class SubscriptionCard extends ConsumerWidget {
     required this.subscription,
     this.onTap,
     this.onToggleStatus,
-    this.onMarkAsPaid,
     this.onDelete,
   });
 
@@ -115,7 +113,6 @@ class SubscriptionCard extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(20),
-                      
                     ),
                     child: Material(
                       color: Colors.transparent,
@@ -135,7 +132,6 @@ class SubscriptionCard extends ConsumerWidget {
                   ),
                 ],
               ),
-
 
               // Información de pago
               Row(
@@ -383,21 +379,6 @@ class SubscriptionCard extends ConsumerWidget {
                       onToggleStatus?.call();
                     },
                   ),
-
-                  // Marcar como pagada (solo si está activa)
-                  if (subscription.isActive)
-                    _buildMenuOption(
-                      context: context,
-                      theme: theme,
-                      icon: HugeIconsStrokeRounded.tick01,
-                      title: 'Marcar como pagada',
-                      subtitle: 'Registrar pago realizado',
-                      color: Colors.blue,
-                      onTap: () {
-                        Navigator.pop(context);
-                        onMarkAsPaid?.call();
-                      },
-                    ),
 
                   // Eliminar
                   _buildMenuOption(

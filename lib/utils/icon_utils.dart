@@ -110,6 +110,11 @@ class IconUtils {
       'icon': HugeIconsStrokeRounded.musicNote01,
       'category': 'entertainment',
     },
+    {
+      'name': 'computerDollar',
+      'icon': HugeIconsStrokeRounded.computerDollar,
+      'category': 'suscription',
+    },
 
     // Salud y bienestar
     {

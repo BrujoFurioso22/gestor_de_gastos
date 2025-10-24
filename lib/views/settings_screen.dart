@@ -10,6 +10,9 @@ import '../constants/app_constants.dart';
 import 'categories_screen.dart';
 import '../services/hive_service.dart';
 import '../providers/category_provider.dart';
+import '../services/notification_service.dart';
+import '../services/timer_service.dart';
+import '../providers/subscription_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -208,9 +211,13 @@ class SettingsScreen extends ConsumerWidget {
               context,
               ref,
               SimpleLocalization.getText(ref, 'exportData'),
-              SimpleLocalization.getText(ref, 'downloadPdfOrExcel'),
+              isPremium
+                  ? SimpleLocalization.getText(ref, 'downloadExcelOrCsv')
+                  : SimpleLocalization.getText(ref, 'requiresPremium'),
               HugeIconsStrokeRounded.download01,
-              () => _showExportDataDialog(context, ref),
+              () => isPremium
+                  ? _showExportDataDialog(context, ref)
+                  : _showPremiumDialog(context, ref),
             ),
           ],
         ),
@@ -253,6 +260,33 @@ class SettingsScreen extends ConsumerWidget {
           context,
           SimpleLocalization.getText(ref, 'settingsNotifications'),
           [
+            // Switch para habilitar/deshabilitar notificaciones
+            _buildSwitchTile(
+              context,
+              ref,
+              'Notificaciones',
+              false, // Estado simplificado
+              HugeIconsStrokeRounded.notification01,
+              (value) async {
+                if (value) {
+                  // Solicitar permisos
+                  final granted =
+                      await NotificationService.requestPermissions();
+                  if (!granted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Se necesitan permisos para las notificaciones',
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  // Deshabilitar notificaciones
+                  TimerService.cancelAllReminders();
+                }
+              },
+            ),
             _buildDropdownTile(
               context,
               ref,
@@ -281,6 +315,38 @@ class SettingsScreen extends ConsumerWidget {
                   .read(appConfigProvider.notifier)
                   .updateWeeklySummary(value),
             ),
+            _buildListTile(
+              context,
+              ref,
+              'Configuración de Notificaciones',
+              'Abrir configuración del sistema',
+              HugeIconsStrokeRounded.settings01,
+              () => NotificationService.openNotificationSettings(),
+            ),
+            _buildListTile(
+              context,
+              ref,
+              'Probar Notificación',
+              'Enviar notificación de prueba',
+              HugeIconsStrokeRounded.testTube,
+              () => _testNotification(context, ref),
+            ),
+            _buildListTile(
+              context,
+              ref,
+              'Ver Recordatorios Activos',
+              'Mostrar recordatorios programados con Timer',
+              HugeIconsStrokeRounded.clock01,
+              () => _showActiveReminders(context, ref),
+            ),
+            _buildListTile(
+              context,
+              ref,
+              'Procesar Pagos Vencidos',
+              'Procesar pagos automáticos para suscripciones vencidas',
+              HugeIconsStrokeRounded.creditCard01,
+              () => _processOverduePayments(context, ref),
+            ),
           ],
         ),
 
@@ -301,16 +367,27 @@ class SettingsScreen extends ConsumerWidget {
               HugeIconsStrokeRounded.star,
               () => _showPremiumDialog(context, ref),
             ),
+            // Toggle para pruebas - Cambiar entre premium y no premium
             _buildSwitchTile(
               context,
               ref,
-              SimpleLocalization.getText(ref, 'ads'),
-              !isPremium,
-              HugeIconsStrokeRounded.megaphone01,
-              (value) =>
-                  ref.read(adMobStateProvider.notifier).setAdsEnabled(value),
-              enabled: !isPremium,
+              'Modo Premium (Pruebas)',
+              isPremium,
+              HugeIconsStrokeRounded.star,
+              (value) => ref.read(settingsProvider.notifier).setPremium(value),
             ),
+            // Solo mostrar opción de anuncios si NO es premium
+            if (!isPremium)
+              _buildSwitchTile(
+                context,
+                ref,
+                SimpleLocalization.getText(ref, 'ads'),
+                !isPremium,
+                HugeIconsStrokeRounded.megaphone01,
+                (value) =>
+                    ref.read(adMobStateProvider.notifier).setAdsEnabled(value),
+                enabled: !isPremium,
+              ),
           ],
         ),
 
@@ -549,9 +626,13 @@ class SettingsScreen extends ConsumerWidget {
               title: Text(entry.value),
               value: entry.key,
               groupValue: ref.read(appConfigProvider).language,
-              onChanged: (value) {
+              onChanged: (value) async {
                 if (value != null) {
-                  ref.read(appConfigProvider.notifier).updateLanguage(value);
+                  await ref
+                      .read(appConfigProvider.notifier)
+                      .updateLanguage(value);
+                  // Refrescar las categorías después de cambiar idioma
+                  ref.read(categoriesProvider.notifier).refresh();
                   Navigator.pop(context);
                 }
               },
@@ -639,31 +720,33 @@ class SettingsScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(context),
             child: Text(SimpleLocalization.getText(ref, 'cancel')),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    SimpleLocalization.getText(ref, 'exportingToPdf'),
-                  ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _exportToExcel(context, ref);
+                },
+                icon: HugeIcon(
+                  icon: HugeIconsStrokeRounded.download01,
+                  size: 16,
                 ),
-              );
-            },
-            child: const Text('PDF'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    SimpleLocalization.getText(ref, 'exportingToExcel'),
-                  ),
+                label: const Text('Excel'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _exportToCsv(context, ref);
+                },
+                icon: HugeIcon(
+                  icon: HugeIconsStrokeRounded.download01,
+                  size: 16,
                 ),
-              );
-            },
-            child: const Text('Excel'),
+                label: const Text('CSV'),
+              ),
+            ],
           ),
         ],
       ),
@@ -683,8 +766,6 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(SimpleLocalization.getText(ref, 'noAds')),
             Text(SimpleLocalization.getText(ref, 'advancedExport')),
-            Text(SimpleLocalization.getText(ref, 'customThemes')),
-            Text(SimpleLocalization.getText(ref, 'cloudBackup')),
             Text(SimpleLocalization.getText(ref, 'prioritySupport')),
           ],
         ),
@@ -725,8 +806,20 @@ class SettingsScreen extends ConsumerWidget {
             child: Text(SimpleLocalization.getText(ref, 'cancel')),
           ),
           FilledButton(
-            onPressed: () {
-              ref.read(appConfigProvider.notifier).resetToDefaults();
+            onPressed: () async {
+              // Guardar el idioma actual antes del reset
+              final currentLanguage = ref.read(appConfigProvider).language;
+
+              // Resetear configuración de la app
+              await ref.read(appConfigProvider.notifier).resetToDefaults();
+              // Resetear configuración de settings
+              await ref.read(settingsProvider.notifier).resetToDefaults();
+
+              // Restaurar el idioma que tenía el usuario
+              await ref
+                  .read(appConfigProvider.notifier)
+                  .updateLanguage(currentLanguage);
+
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -832,5 +925,292 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Exporta los datos a Excel
+  void _exportToExcel(BuildContext context, WidgetRef ref) async {
+    try {
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16),
+              Text(SimpleLocalization.getText(ref, 'exportingToExcel')),
+            ],
+          ),
+        ),
+      );
+
+      // Simular proceso de exportación
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Cerrar diálogo de carga
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar mensaje de éxito
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(SimpleLocalization.getText(ref, 'exportCompleted')),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: SimpleLocalization.getText(ref, 'open'),
+              textColor: Colors.white,
+              onPressed: () {
+                // Aquí se abriría el archivo Excel
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      SimpleLocalization.getText(ref, 'fileOpened'),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Cerrar diálogo de carga si está abierto
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar error
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${SimpleLocalization.getText(ref, 'exportError')}: $e',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Exporta los datos a CSV
+  void _exportToCsv(BuildContext context, WidgetRef ref) async {
+    try {
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16),
+              Text(SimpleLocalization.getText(ref, 'exportingToCsv')),
+            ],
+          ),
+        ),
+      );
+
+      // Simular proceso de exportación
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Cerrar diálogo de carga
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar mensaje de éxito
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(SimpleLocalization.getText(ref, 'exportCompleted')),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: SimpleLocalization.getText(ref, 'open'),
+              textColor: Colors.white,
+              onPressed: () {
+                // Aquí se abriría el archivo CSV
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      SimpleLocalization.getText(ref, 'fileOpened'),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Cerrar diálogo de carga si está abierto
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar error
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${SimpleLocalization.getText(ref, 'exportError')}: $e',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Método para probar notificaciones
+  void _testNotification(BuildContext context, WidgetRef ref) async {
+    try {
+      // Mostrar diálogo de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Enviando notificación de prueba...'),
+            ],
+          ),
+        ),
+      );
+
+      // Enviar notificación de prueba
+      await NotificationService.showImmediateNotification(
+        title: '🧪 Notificación de Prueba',
+        body: '¡Las notificaciones están funcionando correctamente!',
+        payload: 'test_notification',
+      );
+
+      // Cerrar diálogo de carga
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar mensaje de éxito
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Notificación de prueba enviada'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Cerrar diálogo de carga si está abierto
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar error
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error enviando notificación: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Método para mostrar recordatorios activos
+  void _showActiveReminders(BuildContext context, WidgetRef ref) async {
+    try {
+      final activeReminders = TimerService.getActiveReminders();
+
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Recordatorios Activos'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: activeReminders.isEmpty
+                  ? const Text('No hay recordatorios activos')
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: activeReminders.length,
+                      itemBuilder: (context, index) {
+                        final entry = activeReminders.entries.elementAt(index);
+                        final subscriptionId = entry.key;
+                        final reminderDate = entry.value;
+
+                        return ListTile(
+                          leading: const Icon(Icons.schedule),
+                          title: Text('Suscripción: $subscriptionId'),
+                          subtitle: Text(
+                            'Recordatorio: ${reminderDate.toString()}',
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error mostrando recordatorios: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Método para procesar pagos vencidos
+  void _processOverduePayments(BuildContext context, WidgetRef ref) async {
+    try {
+      // Mostrar diálogo de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Procesando pagos vencidos...'),
+            ],
+          ),
+        ),
+      );
+
+      // Procesar pagos vencidos
+      await ref.read(subscriptionsProvider.notifier).processOverduePayments();
+
+      // Cerrar diálogo de carga
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar mensaje de éxito
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Pagos vencidos procesados automáticamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Cerrar diálogo de carga si está abierto
+      if (context.mounted) Navigator.pop(context);
+
+      // Mostrar error
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error procesando pagos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

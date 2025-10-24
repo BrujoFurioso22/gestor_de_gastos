@@ -147,7 +147,8 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
   Widget _buildStatsCards(ThemeData theme, SubscriptionStats stats) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding, // Reducido de AppConstants.smallPadding a 4
+        horizontal: AppConstants
+            .defaultPadding, // Reducido de AppConstants.smallPadding a 4
       ),
       child: Row(
         children: [
@@ -250,7 +251,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           subscription: subscription,
           onTap: () => _showEditSubscriptionDialog(subscription),
           onToggleStatus: () => _toggleSubscriptionStatus(subscription),
-          onMarkAsPaid: () => _markAsPaid(subscription),
           onDelete: () => _showDeleteDialog(subscription),
         );
       },
@@ -341,23 +341,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
     ref
         .read(subscriptionsProvider.notifier)
         .toggleSubscriptionStatus(subscription.id);
-  }
-
-  void _markAsPaid(Subscription subscription) {
-    ref.read(subscriptionsProvider.notifier).markAsPaid(subscription.id);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${subscription.name} ${SimpleLocalization.getText(ref, 'markedAsPaid')}',
-        ),
-        action: SnackBarAction(
-          label: SimpleLocalization.getText(ref, 'undo'),
-          onPressed: () {
-            // TODO: Implementar deshacer
-          },
-        ),
-      ),
-    );
   }
 
   void _showDeleteDialog(Subscription subscription) {

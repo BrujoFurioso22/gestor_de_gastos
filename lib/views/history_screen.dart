@@ -6,6 +6,7 @@ import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/category_provider.dart';
 import '../utils/app_formatters.dart';
+import '../utils/icon_utils.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
 import '../widgets/forms/transaction_form.dart';
@@ -95,18 +96,59 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         vertical: 4,
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: isIncome
-              ? theme.colorScheme.primary.withOpacity(0.1)
-              : theme.colorScheme.error.withOpacity(0.1),
-          child: HugeIcon(
-            icon: isIncome
-                ? HugeIconsStrokeRounded.arrowUp01
-                : HugeIconsStrokeRounded.arrowDown01,
-            color: isIncome
-                ? theme.colorScheme.primary
-                : theme.colorScheme.error,
-          ),
+        leading: Consumer(
+          builder: (context, ref, child) {
+            final category = ref.watch(
+              categoryByIdProvider(transaction.category),
+            );
+            return Stack(
+              children: [
+                CircleAvatar(
+                  backgroundColor: category?.color != null
+                      ? Color(
+                          int.parse(category!.color.replaceFirst('#', '0xFF')),
+                        ).withOpacity(0.1)
+                      : theme.colorScheme.primaryContainer,
+                  child: category?.icon != null
+                      ? HugeIcon(
+                          icon: IconUtils.getIconFromString(category!.icon),
+                          color: Color(
+                            int.parse(category.color.replaceFirst('#', '0xFF')),
+                          ),
+                        )
+                      : HugeIcon(
+                          icon: isIncome
+                              ? HugeIconsStrokeRounded.money01
+                              : HugeIconsStrokeRounded.money01,
+                          color: theme.colorScheme.primary,
+                        ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: isIncome
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.error,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.surface,
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      isIncome ? Icons.add : Icons.remove,
+                      size: 10,
+                      color: theme.colorScheme.surface,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         title: Consumer(
           builder: (context, ref, child) {
@@ -143,29 +185,36 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               ),
           ],
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              AppFormatters.formatAmountWithSign(
-                isIncome ? transaction.amount : -transaction.amount,
-                ref,
-              ),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: isIncome
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.error,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              transaction.category,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+        trailing: Consumer(
+          builder: (context, ref, child) {
+            final category = ref.watch(
+              categoryByIdProvider(transaction.category),
+            );
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  AppFormatters.formatAmountWithSign(
+                    isIncome ? transaction.amount : -transaction.amount,
+                    ref,
+                  ),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isIncome
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  category?.name ?? transaction.category,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         onTap: () {
           _showEditTransactionDialog(transaction);

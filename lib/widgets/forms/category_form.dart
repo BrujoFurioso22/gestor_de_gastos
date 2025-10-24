@@ -27,6 +27,7 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
   TransactionType _selectedType = TransactionType.expense;
   String _selectedIcon = 'shoppingCart01';
   String _selectedColor = '#FFCDD2'; // Rojo pastel por defecto
+  bool _isDefaultCategory = false;
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
     _selectedType = category.type;
     _selectedIcon = category.icon;
     _selectedColor = category.color;
+    _isDefaultCategory = DefaultCategories.isDefaultCategory(category.id);
   }
 
   @override
@@ -86,10 +88,14 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
               // Name field
               TextFormField(
                 controller: _nameController,
+                enabled:
+                    !_isDefaultCategory, // Deshabilitar para categorías por defecto
                 decoration: InputDecoration(
                   labelText:
                       '${SimpleLocalization.getText(ref, 'categoryName')} *',
-                  hintText: SimpleLocalization.getText(ref, 'categoryNameHint'),
+                  hintText: _isDefaultCategory
+                      ? 'Nombre fijo (se traduce automáticamente)'
+                      : SimpleLocalization.getText(ref, 'categoryNameHint'),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       AppConstants.borderRadius,
@@ -104,7 +110,41 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
                 },
               ),
 
-              const SizedBox(height: AppConstants.defaultPadding),
+              // Mensaje informativo para categorías por defecto
+              if (_isDefaultCategory) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      HugeIcon(
+                        icon: HugeIconsStrokeRounded.alertCircle,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Esta es una categoría por defecto. Solo puedes cambiar el ícono y el color. El nombre se traduce automáticamente.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppConstants.defaultPadding),
+              ] else
+                const SizedBox(height: AppConstants.defaultPadding),
 
               // Type selector
               _buildTypeSelector(theme),
@@ -136,28 +176,44 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
-        ModernToggleSelector<TransactionType>(
-          options: [
-            ToggleOption(
-              value: TransactionType.expense,
-              label: SimpleLocalization.getText(ref, 'expense'),
-              color: theme.colorScheme.error,
-              icon: HugeIconsStrokeRounded.arrowDown01,
+        AbsorbPointer(
+          absorbing:
+              _isDefaultCategory, // Deshabilitar para categorías por defecto
+          child: Opacity(
+            opacity: _isDefaultCategory ? 0.5 : 1.0,
+            child: ModernToggleSelector<TransactionType>(
+              options: [
+                ToggleOption(
+                  value: TransactionType.expense,
+                  label: SimpleLocalization.getText(ref, 'expense'),
+                  color: theme.colorScheme.error,
+                  icon: HugeIconsStrokeRounded.arrowDown01,
+                ),
+                ToggleOption(
+                  value: TransactionType.income,
+                  label: SimpleLocalization.getText(ref, 'income'),
+                  color: theme.colorScheme.primary,
+                  icon: HugeIconsStrokeRounded.arrowUp01,
+                ),
+              ],
+              value: _selectedType,
+              onChanged: (value) {
+                setState(() {
+                  _selectedType = value;
+                });
+              },
             ),
-            ToggleOption(
-              value: TransactionType.income,
-              label: SimpleLocalization.getText(ref, 'income'),
-              color: theme.colorScheme.primary,
-              icon: HugeIconsStrokeRounded.arrowUp01,
-            ),
-          ],
-          value: _selectedType,
-          onChanged: (value) {
-            setState(() {
-              _selectedType = value;
-            });
-          },
+          ),
         ),
+        if (_isDefaultCategory) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Tipo fijo (no se puede cambiar)',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ],
     );
   }

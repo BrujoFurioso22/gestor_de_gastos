@@ -489,5 +489,13 @@ class SimpleLocalization {
       'esp': 'Crear y editar categorías personalizadas',
       'eng': 'Create and edit custom categories',
     },
+    'addPaymentOnCreate': {
+      'esp': 'Agregar pago al crear la suscripción',
+      'eng': 'Add payment on create subscription',
+    },
+    'downloadExcelOrCsv': {
+      'esp': 'Descargar en Excel o CSV',
+      'eng': 'Download in Excel or CSV',
+    },
   };
 }

@@ -86,6 +86,63 @@ class Category extends HiveObject {
 
 // Categorías predefinidas
 class DefaultCategories {
+  // IDs de categorías por defecto (para identificar cuáles traducir)
+  static const List<String> defaultCategoryIds = [
+    'income_salary',
+    'income_freelance',
+    'income_investment',
+    'income_other',
+    'expense_food',
+    'expense_subscriptions',
+    'expense_transport',
+    'expense_entertainment',
+    'expense_health',
+    'expense_education',
+    'expense_shopping',
+    'expense_bills',
+    'expense_other',
+  ];
+
+  // Traducciones de categorías por defecto
+  static const Map<String, Map<String, String>> _categoryTranslations = {
+    'income_salary': {'es': 'Salario', 'en': 'Salary'},
+    'income_freelance': {'es': 'Freelance', 'en': 'Freelance'},
+    'income_investment': {'es': 'Inversión', 'en': 'Investment'},
+    'income_other': {'es': 'Otros', 'en': 'Other'},
+    'expense_food': {'es': 'Alimentación', 'en': 'Food'},
+    'expense_subscriptions': {'es': 'Suscripciones', 'en': 'Subscriptions'},
+    'expense_transport': {'es': 'Transporte', 'en': 'Transport'},
+    'expense_entertainment': {'es': 'Entretenimiento', 'en': 'Entertainment'},
+    'expense_health': {'es': 'Salud', 'en': 'Health'},
+    'expense_education': {'es': 'Educación', 'en': 'Education'},
+    'expense_shopping': {'es': 'Compras', 'en': 'Shopping'},
+    'expense_bills': {'es': 'Servicios', 'en': 'Bills'},
+    'expense_other': {'es': 'Otros', 'en': 'Other'},
+  };
+
+  /// Obtiene el nombre traducido de una categoría por defecto
+  static String getTranslatedName(String categoryId, String language) {
+    print('🔍 Buscando traducción para: $categoryId en idioma: $language');
+
+    final translations = _categoryTranslations[categoryId];
+    if (translations == null) {
+      print('❌ No se encontraron traducciones para: $categoryId');
+      return categoryId;
+    }
+
+    final result = language == 'en'
+        ? (translations['en'] ?? translations['es'] ?? categoryId)
+        : (translations['es'] ?? categoryId);
+
+    print('✅ Traducción encontrada: $result');
+    return result;
+  }
+
+  /// Verifica si una categoría es por defecto
+  static bool isDefaultCategory(String categoryId) {
+    return defaultCategoryIds.contains(categoryId);
+  }
+
   static List<Category> get incomeCategories => [
     Category(
       id: 'income_salary',
@@ -123,6 +180,13 @@ class DefaultCategories {
       name: 'Alimentación',
       icon: 'restaurant01',
       color: '#FFCDD2', // Rojo pastel
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'expense_subscriptions',
+      name: 'Suscripciones',
+      icon: 'computerDollar',
+      color: '#81C784', // Verde pastel
       type: TransactionType.expense,
     ),
     Category(
