@@ -35,19 +35,25 @@ class AppConfig extends HiveObject {
   final int subscriptionReminderDays;
 
   @HiveField(10)
-  final bool expenseNotifications;
+  final bool notificationsEnabled;
 
   @HiveField(11)
-  final double dailyExpenseLimit;
+  final double monthlyExpenseLimit;
 
   @HiveField(12)
   final bool weeklySummary;
 
   @HiveField(13)
-  final DateTime createdAt;
+  final bool weekStartsOnMonday;
 
   @HiveField(14)
+  final DateTime createdAt;
+
+  @HiveField(15)
   final DateTime updatedAt;
+
+  @HiveField(16)
+  final String? currentAccountId;
 
   AppConfig({
     this.currency = 'USD',
@@ -60,9 +66,11 @@ class AppConfig extends HiveObject {
     this.vibration = true,
     this.sound = true,
     this.subscriptionReminderDays = 3,
-    this.expenseNotifications = false,
-    this.dailyExpenseLimit = 0.0,
+    this.notificationsEnabled = true,
+    this.monthlyExpenseLimit = 0.0,
     this.weeklySummary = false,
+    this.weekStartsOnMonday = true,
+    this.currentAccountId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
@@ -79,9 +87,11 @@ class AppConfig extends HiveObject {
     bool? vibration,
     bool? sound,
     int? subscriptionReminderDays,
-    bool? expenseNotifications,
-    double? dailyExpenseLimit,
+    bool? notificationsEnabled,
+    double? monthlyExpenseLimit,
     bool? weeklySummary,
+    bool? weekStartsOnMonday,
+    String? currentAccountId,
   }) {
     return AppConfig(
       currency: currency ?? this.currency,
@@ -95,9 +105,11 @@ class AppConfig extends HiveObject {
       sound: sound ?? this.sound,
       subscriptionReminderDays:
           subscriptionReminderDays ?? this.subscriptionReminderDays,
-      expenseNotifications: expenseNotifications ?? this.expenseNotifications,
-      dailyExpenseLimit: dailyExpenseLimit ?? this.dailyExpenseLimit,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      monthlyExpenseLimit: monthlyExpenseLimit ?? this.monthlyExpenseLimit,
       weeklySummary: weeklySummary ?? this.weeklySummary,
+      weekStartsOnMonday: weekStartsOnMonday ?? this.weekStartsOnMonday,
+      currentAccountId: currentAccountId ?? this.currentAccountId,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -115,9 +127,11 @@ class AppConfig extends HiveObject {
       'vibration': vibration,
       'sound': sound,
       'subscriptionReminderDays': subscriptionReminderDays,
-      'expenseNotifications': expenseNotifications,
-      'dailyExpenseLimit': dailyExpenseLimit,
+      'notificationsEnabled': notificationsEnabled,
+      'monthlyExpenseLimit': monthlyExpenseLimit,
       'weeklySummary': weeklySummary,
+      'weekStartsOnMonday': weekStartsOnMonday,
+      'currentAccountId': currentAccountId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -135,9 +149,11 @@ class AppConfig extends HiveObject {
       vibration: json['vibration'] ?? true,
       sound: json['sound'] ?? true,
       subscriptionReminderDays: json['subscriptionReminderDays'] ?? 3,
-      expenseNotifications: json['expenseNotifications'] ?? false,
-      dailyExpenseLimit: (json['dailyExpenseLimit'] ?? 0.0).toDouble(),
+      notificationsEnabled: json['notificationsEnabled'] ?? true,
+      monthlyExpenseLimit: (json['monthlyExpenseLimit'] ?? 0.0).toDouble(),
       weeklySummary: json['weeklySummary'] ?? false,
+      weekStartsOnMonday: json['weekStartsOnMonday'] ?? true,
+      currentAccountId: json['currentAccountId'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );

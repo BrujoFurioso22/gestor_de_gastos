@@ -24,7 +24,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
     with TickerProviderStateMixin {
   final _searchController = TextEditingController();
   late TabController _tabController;
-  SubscriptionFrequency? _selectedFrequency;
 
   @override
   void initState() {
@@ -48,47 +47,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(SimpleLocalization.getText(ref, 'subscriptions')),
-        actions: [
-          IconButton(
-            icon: HugeIcon(icon: HugeIconsStrokeRounded.filter, size: 20),
-            onPressed: _showFilterDialog,
-          ),
-          PopupMenuButton<String>(
-            icon: HugeIcon(icon: HugeIconsStrokeRounded.menu01, size: 20),
-            onSelected: (value) {
-              switch (value) {
-                case 'manage':
-                  _showManageOptions(context, ref);
-                  break;
-                case 'export':
-                  _exportSubscriptions(ref);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'manage',
-                child: Row(
-                  children: [
-                    HugeIcon(icon: HugeIconsStrokeRounded.settings01, size: 18),
-                    const SizedBox(width: 8),
-                    Text(SimpleLocalization.getText(ref, 'manage')),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'export',
-                child: Row(
-                  children: [
-                    HugeIcon(icon: HugeIconsStrokeRounded.download01, size: 18),
-                    const SizedBox(width: 8),
-                    Text(SimpleLocalization.getText(ref, 'export')),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -123,14 +81,14 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildSubscriptionsList(subscriptions, 'Todas'),
+                _buildSubscriptionsList(subscriptions, 'all'),
                 _buildSubscriptionsList(
                   subscriptions.where((s) => s.isActive).toList(),
-                  'Activas',
+                  'active',
                 ),
                 _buildSubscriptionsList(
                   subscriptions.where((s) => !s.isActive).toList(),
-                  'Inactivas',
+                  'inactive',
                 ),
               ],
             ),
@@ -263,14 +221,14 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
     String subtitle;
 
     switch (type) {
-      case 'Activas':
+      case 'active':
         message = SimpleLocalization.getText(ref, 'noActiveSubscriptions');
         subtitle = SimpleLocalization.getText(
           ref,
           'addFirstActiveSubscription',
         );
         break;
-      case 'Inactivas':
+      case 'inactive':
         message = SimpleLocalization.getText(ref, 'noInactiveSubscriptions');
         subtitle = SimpleLocalization.getText(
           ref,
@@ -370,176 +328,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           ),
         ],
       ),
-    );
-  }
-
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'filterSubscriptions')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<SubscriptionFrequency?>(
-              value: _selectedFrequency,
-              decoration: InputDecoration(
-                labelText: SimpleLocalization.getText(ref, 'paymentFrequency'),
-              ),
-              items: [
-                DropdownMenuItem(
-                  value: null,
-                  child: Text(SimpleLocalization.getText(ref, 'all')),
-                ),
-                DropdownMenuItem(
-                  value: SubscriptionFrequency.daily,
-                  child: Text(SimpleLocalization.getText(ref, 'daily')),
-                ),
-                DropdownMenuItem(
-                  value: SubscriptionFrequency.weekly,
-                  child: Text(SimpleLocalization.getText(ref, 'weekly')),
-                ),
-                DropdownMenuItem(
-                  value: SubscriptionFrequency.monthly,
-                  child: Text(SimpleLocalization.getText(ref, 'monthly')),
-                ),
-                DropdownMenuItem(
-                  value: SubscriptionFrequency.quarterly,
-                  child: Text(SimpleLocalization.getText(ref, 'quarterly')),
-                ),
-                DropdownMenuItem(
-                  value: SubscriptionFrequency.yearly,
-                  child: Text(SimpleLocalization.getText(ref, 'yearly')),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedFrequency = value;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _selectedFrequency = null;
-              });
-              Navigator.pop(context);
-            },
-            child: Text(SimpleLocalization.getText(ref, 'clear')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'apply')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Muestra opciones de gestión
-  void _showManageOptions(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: HugeIcon(icon: HugeIconsStrokeRounded.edit01, size: 20),
-              title: Text(SimpleLocalization.getText(ref, 'editAll')),
-              onTap: () {
-                Navigator.pop(context);
-                _showBulkEditDialog(context, ref);
-              },
-            ),
-            ListTile(
-              leading: HugeIcon(
-                icon: HugeIconsStrokeRounded.delete01,
-                size: 20,
-              ),
-              title: Text(SimpleLocalization.getText(ref, 'deleteAll')),
-              onTap: () {
-                Navigator.pop(context);
-                _showBulkDeleteDialog(context, ref);
-              },
-            ),
-            ListTile(
-              leading: HugeIcon(
-                icon: HugeIconsStrokeRounded.download01,
-                size: 20,
-              ),
-              title: Text(SimpleLocalization.getText(ref, 'exportData')),
-              onTap: () {
-                Navigator.pop(context);
-                _exportSubscriptions(ref);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Muestra diálogo de edición masiva
-  void _showBulkEditDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'bulkEdit')),
-        content: Text(SimpleLocalization.getText(ref, 'bulkEditDescription')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'cancel')),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implementar edición masiva
-            },
-            child: Text(SimpleLocalization.getText(ref, 'edit')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Muestra diálogo de eliminación masiva
-  void _showBulkDeleteDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'bulkDelete')),
-        content: Text(SimpleLocalization.getText(ref, 'bulkDeleteDescription')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'cancel')),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implementar eliminación masiva
-            },
-            child: Text(SimpleLocalization.getText(ref, 'delete')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Exporta las suscripciones
-  void _exportSubscriptions(WidgetRef ref) {
-    // Implementar exportación
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(SimpleLocalization.getText(ref, 'exportStarted'))),
     );
   }
 }

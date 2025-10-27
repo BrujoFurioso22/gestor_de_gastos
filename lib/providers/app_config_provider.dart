@@ -107,21 +107,33 @@ class AppConfigNotifier extends StateNotifier<AppConfig> {
     await updateConfig(newConfig);
   }
 
-  /// Actualiza las notificaciones de gastos
-  Future<void> updateExpenseNotifications(bool enabled) async {
-    final newConfig = state.copyWith(expenseNotifications: enabled);
+  /// Actualiza si las notificaciones están habilitadas
+  Future<void> updateNotificationsEnabled(bool enabled) async {
+    final newConfig = state.copyWith(notificationsEnabled: enabled);
     await updateConfig(newConfig);
   }
 
-  /// Actualiza el límite diario de gastos
-  Future<void> updateDailyExpenseLimit(double limit) async {
-    final newConfig = state.copyWith(dailyExpenseLimit: limit);
+  /// Actualiza el límite mensual de gastos
+  Future<void> updateMonthlyExpenseLimit(double limit) async {
+    final newConfig = state.copyWith(monthlyExpenseLimit: limit);
     await updateConfig(newConfig);
   }
 
   /// Actualiza el resumen semanal
   Future<void> updateWeeklySummary(bool enabled) async {
     final newConfig = state.copyWith(weeklySummary: enabled);
+    await updateConfig(newConfig);
+  }
+
+  /// Actualiza si la semana comienza en lunes
+  Future<void> updateWeekStartsOnMonday(bool startsOnMonday) async {
+    final newConfig = state.copyWith(weekStartsOnMonday: startsOnMonday);
+    await updateConfig(newConfig);
+  }
+
+  /// Actualiza la cuenta actual
+  Future<void> updateCurrentAccountId(String accountId) async {
+    final newConfig = state.copyWith(currentAccountId: accountId);
     await updateConfig(newConfig);
   }
 

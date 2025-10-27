@@ -31,13 +31,14 @@ class SubscriptionAdapter extends TypeAdapter<Subscription> {
       createdAt: fields[11] as DateTime?,
       updatedAt: fields[12] as DateTime?,
       nextPaymentDate: fields[13] as DateTime?,
+      accountId: fields.containsKey(14) ? fields[14] as String? : null,
     );
   }
 
   @override
   void write(BinaryWriter writer, Subscription obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -65,7 +66,9 @@ class SubscriptionAdapter extends TypeAdapter<Subscription> {
       ..writeByte(12)
       ..write(obj.updatedAt)
       ..writeByte(13)
-      ..write(obj.nextPaymentDate);
+      ..write(obj.nextPaymentDate)
+      ..writeByte(14)
+      ..write(obj.accountId);
   }
 
   @override

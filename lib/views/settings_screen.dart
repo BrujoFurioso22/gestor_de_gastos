@@ -7,6 +7,7 @@ import '../providers/admob_provider.dart';
 import '../providers/app_config_provider.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
+import '../utils/app_formatters.dart';
 import 'categories_screen.dart';
 import '../services/hive_service.dart';
 import '../providers/category_provider.dart';
@@ -138,6 +139,19 @@ class SettingsScreen extends ConsumerWidget {
               (value) =>
                   ref.read(appConfigProvider.notifier).updateShowCents(value),
             ),
+            _buildListTile(
+              context,
+              ref,
+              SimpleLocalization.getText(ref, 'monthlyExpenseLimit'),
+              appConfig.monthlyExpenseLimit > 0
+                  ? AppFormatters.formatCurrency(
+                      appConfig.monthlyExpenseLimit,
+                      ref,
+                    )
+                  : SimpleLocalization.getText(ref, 'noLimitConfigured'),
+              HugeIconsStrokeRounded.stopCircle,
+              () => _showMonthlyLimitDialog(context, ref),
+            ),
           ],
         ),
 
@@ -164,13 +178,23 @@ class SettingsScreen extends ConsumerWidget {
               HugeIconsStrokeRounded.edit01,
               () => _showFontSizeDialog(context, ref),
             ),
+            _buildListTile(
+              context,
+              ref,
+              SimpleLocalization.getText(ref, 'weekStart'),
+              appConfig.weekStartsOnMonday
+                  ? SimpleLocalization.getText(ref, 'monday')
+                  : SimpleLocalization.getText(ref, 'sunday'),
+              HugeIconsStrokeRounded.calendar01,
+              () => _showWeekStartDialog(context, ref),
+            ),
           ],
         ),
 
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Sección de Gestión
-        _buildSection(context, 'Gestión', [
+        _buildSection(context, SimpleLocalization.getText(ref, 'management'), [
           _buildListTile(
             context,
             ref,
@@ -182,8 +206,8 @@ class SettingsScreen extends ConsumerWidget {
           _buildListTile(
             context,
             ref,
-            'Restaurar Categorías',
-            'Restaurar categorías por defecto (elimina categorías personalizadas)',
+            SimpleLocalization.getText(ref, 'restoreCategories'),
+            SimpleLocalization.getText(ref, 'restoreCategoriesDescription'),
             HugeIconsStrokeRounded.arrowLeft01,
             () => _showRestoreCategoriesDialog(context, ref),
           ),
@@ -264,8 +288,8 @@ class SettingsScreen extends ConsumerWidget {
             _buildSwitchTile(
               context,
               ref,
-              'Notificaciones',
-              false, // Estado simplificado
+              SimpleLocalization.getText(ref, 'notifications'),
+              appConfig.notificationsEnabled,
               HugeIconsStrokeRounded.notification01,
               (value) async {
                 if (value) {
@@ -274,15 +298,32 @@ class SettingsScreen extends ConsumerWidget {
                       await NotificationService.requestPermissions();
                   if (!granted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text(
-                          'Se necesitan permisos para las notificaciones',
+                          SimpleLocalization.getText(
+                            ref,
+                            'notificationsPermissionRequired',
+                          ),
                         ),
                       ),
                     );
+                    // Si no hay permisos, no habilitar las notificaciones
+                    return;
                   }
+                  // Guardar que las notificaciones están habilitadas
+                  await ref
+                      .read(appConfigProvider.notifier)
+                      .updateNotificationsEnabled(true);
+                  // Reprogramar todos los recordatorios
+                  final subscriptions = ref.read(subscriptionsProvider);
+                  await TimerService.scheduleAllSubscriptionReminders(
+                    subscriptions,
+                  );
                 } else {
                   // Deshabilitar notificaciones
+                  await ref
+                      .read(appConfigProvider.notifier)
+                      .updateNotificationsEnabled(false);
                   TimerService.cancelAllReminders();
                 }
               },
@@ -295,57 +336,13 @@ class SettingsScreen extends ConsumerWidget {
               HugeIconsStrokeRounded.notification01,
               () => _showReminderDaysDialog(context, ref),
             ),
-            _buildSwitchTile(
-              context,
-              ref,
-              SimpleLocalization.getText(ref, 'expenseNotifications'),
-              appConfig.expenseNotifications,
-              HugeIconsStrokeRounded.alert01,
-              (value) => ref
-                  .read(appConfigProvider.notifier)
-                  .updateExpenseNotifications(value),
-            ),
-            _buildSwitchTile(
-              context,
-              ref,
-              SimpleLocalization.getText(ref, 'weeklySummary'),
-              appConfig.weeklySummary,
-              HugeIconsStrokeRounded.analytics01,
-              (value) => ref
-                  .read(appConfigProvider.notifier)
-                  .updateWeeklySummary(value),
-            ),
             _buildListTile(
               context,
               ref,
-              'Configuración de Notificaciones',
-              'Abrir configuración del sistema',
-              HugeIconsStrokeRounded.settings01,
-              () => NotificationService.openNotificationSettings(),
-            ),
-            _buildListTile(
-              context,
-              ref,
-              'Probar Notificación',
-              'Enviar notificación de prueba',
+              SimpleLocalization.getText(ref, 'testNotification'),
+              SimpleLocalization.getText(ref, 'sendTestNotification'),
               HugeIconsStrokeRounded.testTube,
               () => _testNotification(context, ref),
-            ),
-            _buildListTile(
-              context,
-              ref,
-              'Ver Recordatorios Activos',
-              'Mostrar recordatorios programados con Timer',
-              HugeIconsStrokeRounded.clock01,
-              () => _showActiveReminders(context, ref),
-            ),
-            _buildListTile(
-              context,
-              ref,
-              'Procesar Pagos Vencidos',
-              'Procesar pagos automáticos para suscripciones vencidas',
-              HugeIconsStrokeRounded.creditCard01,
-              () => _processOverduePayments(context, ref),
             ),
           ],
         ),
@@ -371,7 +368,7 @@ class SettingsScreen extends ConsumerWidget {
             _buildSwitchTile(
               context,
               ref,
-              'Modo Premium (Pruebas)',
+              SimpleLocalization.getText(ref, 'premiumModeTesting'),
               isPremium,
               HugeIconsStrokeRounded.star,
               (value) => ref.read(settingsProvider.notifier).setPremium(value),
@@ -693,7 +690,9 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(categoriesProvider.notifier).refresh();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Categorías actualizadas con nuevos iconos'),
+                    content: Text(
+                      SimpleLocalization.getText(ref, 'categoriesUpdated'),
+                    ),
                   ),
                 );
               } catch (e) {
@@ -702,7 +701,7 @@ class SettingsScreen extends ConsumerWidget {
                 ).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
-            child: Text('Actualizar Iconos'),
+            child: Text(SimpleLocalization.getText(ref, 'updateIcons')),
           ),
         ],
       ),
@@ -754,40 +753,169 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showPremiumDialog(BuildContext context, WidgetRef ref) {
+    final isPremium = ref.read(isPremiumProvider);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'premiumVersion')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(SimpleLocalization.getText(ref, 'unlockPremiumFeatures')),
-            const SizedBox(height: 8),
-            Text(SimpleLocalization.getText(ref, 'noAds')),
-            Text(SimpleLocalization.getText(ref, 'advancedExport')),
-            Text(SimpleLocalization.getText(ref, 'prioritySupport')),
-          ],
+        title: Text(
+          isPremium
+              ? SimpleLocalization.getText(ref, 'premiumVersion')
+              : SimpleLocalization.getText(ref, 'unlockPremiumFeatures'),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'close')),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    SimpleLocalization.getText(ref, 'functionInDevelopment'),
-                  ),
+        content: isPremium
+            ? _buildPremiumActiveContent(context, ref)
+            : _buildPremiumPurchaseOptions(context, ref),
+        actions: isPremium
+            ? [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(SimpleLocalization.getText(ref, 'close')),
                 ),
-              );
-            },
-            child: Text(SimpleLocalization.getText(ref, 'upgrade')),
+              ]
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildPremiumPurchaseOptions(BuildContext context, WidgetRef ref) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          SimpleLocalization.getText(ref, 'selectPlan'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        // Plan Mensual
+        _buildPurchaseOption(
+          context: context,
+          ref: ref,
+          title: SimpleLocalization.getText(ref, 'monthly'),
+          price: '\$4.99',
+          isBestValue: false,
+          onTap: () => _processPurchase(context, ref, 'monthly'),
+        ),
+        const SizedBox(height: 12),
+        // Plan Anual
+        _buildPurchaseOption(
+          context: context,
+          ref: ref,
+          title: SimpleLocalization.getText(ref, 'yearly'),
+          price: '\$39.99',
+          isBestValue: true,
+          onTap: () => _processPurchase(context, ref, 'yearly'),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-        ],
+        ),
+        const SizedBox(height: 8),
+        Text('• ${SimpleLocalization.getText(ref, 'noAds')}'),
+        Text('• ${SimpleLocalization.getText(ref, 'advancedExport')}'),
+        Text('• ${SimpleLocalization.getText(ref, 'prioritySupport')}'),
+        Text('• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}'),
+      ],
+    );
+  }
+
+  Widget _buildPremiumActiveContent(BuildContext context, WidgetRef ref) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.verified,
+          size: 48,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(height: 16),
+        Text(SimpleLocalization.getText(ref, 'premiumActive')),
+        const SizedBox(height: 8),
+        Text(
+          SimpleLocalization.getText(ref, 'unlockPremiumFeatures'),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPurchaseOption({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String title,
+    required String price,
+    required bool isBestValue,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (isBestValue)
+                    Text(
+                      SimpleLocalization.getText(ref, 'bestValue'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+              Text(
+                price,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Procesa la compra (simulado por ahora)
+  void _processPurchase(BuildContext context, WidgetRef ref, String plan) {
+    Navigator.pop(context); // Cerrar el diálogo
+
+    // SIMULACIÓN: Activar premium directamente
+    // En producción, aquí se integraría con Google Play Billing o App Store
+    ref.read(settingsProvider.notifier).setPremium(true);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(SimpleLocalization.getText(ref, 'purchaseSuccessful')),
+        backgroundColor: Colors.green,
+        action: SnackBarAction(
+          label: SimpleLocalization.getText(ref, 'close'),
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
       ),
     );
   }
@@ -910,13 +1038,22 @@ class SettingsScreen extends ConsumerWidget {
                 await HiveService.restoreDefaultCategories();
                 ref.read(categoriesProvider.notifier).refresh();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Categorías restauradas correctamente'),
+                  SnackBar(
+                    content: Text(
+                      SimpleLocalization.getText(
+                        ref,
+                        'categoriesRestoredSuccessfully',
+                      ),
+                    ),
                   ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error al restaurar categorías: $e')),
+                  SnackBar(
+                    content: Text(
+                      '${SimpleLocalization.getText(ref, 'errorRestoringCategories')}: $e',
+                    ),
+                  ),
                 );
               }
             },
@@ -1112,105 +1249,154 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  /// Método para mostrar recordatorios activos
-  void _showActiveReminders(BuildContext context, WidgetRef ref) async {
-    try {
-      final activeReminders = TimerService.getActiveReminders();
+  /// Muestra el diálogo para configurar el límite mensual de gastos
+  void _showMonthlyLimitDialog(BuildContext context, WidgetRef ref) {
+    final appConfig = ref.read(appConfigProvider);
+    final controller = TextEditingController(
+      text: appConfig.monthlyExpenseLimit > 0
+          ? appConfig.monthlyExpenseLimit.toStringAsFixed(2)
+          : '',
+    );
 
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Recordatorios Activos'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: activeReminders.isEmpty
-                  ? const Text('No hay recordatorios activos')
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: activeReminders.length,
-                      itemBuilder: (context, index) {
-                        final entry = activeReminders.entries.elementAt(index);
-                        final subscriptionId = entry.key;
-                        final reminderDate = entry.value;
-
-                        return ListTile(
-                          leading: const Icon(Icons.schedule),
-                          title: Text('Suscripción: $subscriptionId'),
-                          subtitle: Text(
-                            'Recordatorio: ${reminderDate.toString()}',
-                          ),
-                        );
-                      },
-                    ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cerrar'),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(SimpleLocalization.getText(ref, 'monthlyExpenseLimit')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(SimpleLocalization.getText(ref, 'setMonthlyExpenseLimit')),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: SimpleLocalization.getText(ref, 'weeklyLimit'),
+                hintText: SimpleLocalization.getText(ref, 'exampleAmount'),
+                prefixIcon: const Icon(Icons.attach_money),
+                suffix: Text(
+                  appConfig.currency == 'USD'
+                      ? '\$'
+                      : appConfig.currency == 'EUR'
+                      ? '€'
+                      : appConfig.currency == 'MXN'
+                      ? '\$'
+                      : appConfig.currency == 'GBP'
+                      ? '£'
+                      : appConfig.currency == 'CAD'
+                      ? 'C\$'
+                      : 'A\$',
+                ),
               ),
-            ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              controller.text = '';
+              Navigator.pop(context);
+            },
+            child: Text(SimpleLocalization.getText(ref, 'removeLimit')),
           ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error mostrando recordatorios: $e'),
-            backgroundColor: Colors.red,
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
           ),
-        );
-      }
-    }
+          FilledButton(
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isEmpty ||
+                  text == '0' ||
+                  text == '0.0' ||
+                  text == '0.00') {
+                // Eliminar límite
+                await ref
+                    .read(appConfigProvider.notifier)
+                    .updateMonthlyExpenseLimit(0.0);
+              } else {
+                // Establecer límite
+                final limit = double.tryParse(text);
+                if (limit != null && limit > 0) {
+                  await ref
+                      .read(appConfigProvider.notifier)
+                      .updateMonthlyExpenseLimit(limit);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          SimpleLocalization.getText(ref, 'enterValidValue'),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  return;
+                }
+              }
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      text.isEmpty
+                          ? 'Límite eliminado'
+                          : 'Límite configurado correctamente',
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: Text(SimpleLocalization.getText(ref, 'save')),
+          ),
+        ],
+      ),
+    );
   }
 
-  /// Método para procesar pagos vencidos
-  void _processOverduePayments(BuildContext context, WidgetRef ref) async {
-    try {
-      // Mostrar diálogo de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Procesando pagos vencidos...'),
-            ],
-          ),
+  void _showWeekStartDialog(BuildContext context, WidgetRef ref) {
+    final appConfig = ref.read(appConfigProvider);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(SimpleLocalization.getText(ref, 'weekStart')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<bool>(
+              title: Text(SimpleLocalization.getText(ref, 'monday')),
+              value: true,
+              groupValue: appConfig.weekStartsOnMonday,
+              onChanged: (value) {
+                if (value != null) {
+                  Navigator.pop(context);
+                  ref
+                      .read(appConfigProvider.notifier)
+                      .updateWeekStartsOnMonday(value);
+                }
+              },
+              selected: appConfig.weekStartsOnMonday == true,
+            ),
+            RadioListTile<bool>(
+              title: Text(SimpleLocalization.getText(ref, 'sunday')),
+              value: false,
+              groupValue: appConfig.weekStartsOnMonday,
+              onChanged: (value) {
+                if (value != null) {
+                  Navigator.pop(context);
+                  ref
+                      .read(appConfigProvider.notifier)
+                      .updateWeekStartsOnMonday(value);
+                }
+              },
+              selected: appConfig.weekStartsOnMonday == false,
+            ),
+          ],
         ),
-      );
-
-      // Procesar pagos vencidos
-      await ref.read(subscriptionsProvider.notifier).processOverduePayments();
-
-      // Cerrar diálogo de carga
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar mensaje de éxito
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Pagos vencidos procesados automáticamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      // Cerrar diálogo de carga si está abierto
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar error
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error procesando pagos: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+      ),
+    );
   }
 }

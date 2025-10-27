@@ -19,7 +19,7 @@ class SimpleLocalization {
   }
 
   static const Map<String, Map<String, String>> _translations = {
-    'before':{'esp': 'antes', 'eng': 'before'},
+    'before': {'esp': 'antes', 'eng': 'before'},
     'appTitle': {'esp': 'MiControl', 'eng': 'MiControl'},
     'dashboard': {'esp': 'Inicio', 'eng': 'Dashboard'},
     'history': {'esp': 'Historial', 'eng': 'History'},
@@ -296,16 +296,13 @@ class SimpleLocalization {
       'esp': 'Desbloquea todas las funciones premium:',
       'eng': 'Unlock all premium features:',
     },
-    'noAds': {'esp': '• Sin anuncios', 'eng': '• No ads'},
-    'advancedExport': {
-      'esp': '• Exportación avanzada',
-      'eng': '• Advanced export',
-    },
-    'customThemes': {'esp': '• Temas personalizados', 'eng': '• Custom themes'},
-    'cloudBackup': {'esp': '• Backup en la nube', 'eng': '• Cloud backup'},
+    'noAds': {'esp': 'Sin anuncios', 'eng': 'No ads'},
+    'advancedExport': {'esp': 'Exportación avanzada', 'eng': 'Advanced export'},
+    'customThemes': {'esp': 'Temas personalizados', 'eng': 'Custom themes'},
+    'cloudBackup': {'esp': 'Backup en la nube', 'eng': 'Cloud backup'},
     'prioritySupport': {
-      'esp': '• Soporte prioritario',
-      'eng': '• Priority support',
+      'esp': 'Soporte prioritario',
+      'eng': 'Priority support',
     },
     'close': {'esp': 'Cerrar', 'eng': 'Close'},
     'upgrade': {'esp': 'Actualizar', 'eng': 'Upgrade'},
@@ -314,7 +311,7 @@ class SimpleLocalization {
       'eng': 'Settings restored',
     },
     'restore': {'esp': 'Restaurar', 'eng': 'Restore'},
-    'day': {'esp': 'día', 'eng': 'day'},
+    'day': {'esp': 'Día', 'eng': 'Day'},
     'titleRequired': {
       'esp': 'El título es obligatorio',
       'eng': 'Title is required',
@@ -390,18 +387,12 @@ class SimpleLocalization {
       'esp': 'Agrega tu primera categoría',
       'eng': 'Add your first category',
     },
-    'category':{
-      'esp': 'Categoría',
-      'eng': 'Category',
-    },
+    'category': {'esp': 'Categoría', 'eng': 'Category'},
     'manageSubscriptions': {
       'esp': 'Gestionar Suscripciones',
       'eng': 'Manage Subscriptions',
     },
-    'date':{
-      'esp': 'Fecha',
-      'eng': 'Date',
-    },
+    'date': {'esp': 'Fecha', 'eng': 'Date'},
     'startDate': {'esp': 'Fecha de inicio', 'eng': 'Start date'},
     'endDate': {'esp': 'Fecha de fin (opcional)', 'eng': 'End date (optional)'},
     'subscriptionNotes': {'esp': 'Notas (opcional)', 'eng': 'Notes (optional)'},
@@ -497,5 +488,178 @@ class SimpleLocalization {
       'esp': 'Descargar en Excel o CSV',
       'eng': 'Download in Excel or CSV',
     },
+    'account': {'esp': 'Cuenta', 'eng': 'Account'},
+    'accounts': {'esp': 'Cuentas', 'eng': 'Accounts'},
+    'accountName': {'esp': 'Nombre', 'eng': 'Name'},
+    'initialBalance': {'esp': 'Balance inicial', 'eng': 'Initial Balance'},
+    'accountDeleted': {'esp': 'Cuenta eliminada', 'eng': 'Account deleted'},
+    'accountAdded': {
+      'esp': 'Cuenta agregada exitosamente',
+      'eng': 'Account added successfully',
+    },
+    'balanceUpdated': {
+      'esp': 'Balance actualizado exitosamente',
+      'eng': 'Balance updated successfully',
+    },
+    'newAccount': {'esp': 'Nueva Cuenta', 'eng': 'New Account'},
+    'editBalance': {'esp': 'Editar Balance', 'eng': 'Edit Balance'},
+    'balanceReferenceInfo': {
+      'esp':
+          'El balance inicial es solo una referencia. Este valor no afecta tus transacciones existentes.',
+      'eng':
+          'Initial balance is for reference only. This value does not affect your existing transactions.',
+    },
+    'monthlyExpenseLimit': {
+      'esp': 'Límite Mensual de Gastos',
+      'eng': 'Monthly Expense Limit',
+    },
+    'limitExceeded': {'esp': 'Límite excedido', 'eng': 'Limit exceeded'},
+    'remaining': {'esp': 'Queda', 'eng': 'Remaining'},
+    'used': {'esp': 'usado', 'eng': 'used'},
+    'of': {'esp': 'de', 'eng': 'of'},
+    'distributionByCategory': {
+      'esp': 'Distribución por Categoría',
+      'eng': 'Distribution by Category',
+    },
+    'week': {'esp': 'Semana', 'eng': 'Week'},
+    'month': {'esp': 'Mes', 'eng': 'Month'},
+    'year': {'esp': 'Año', 'eng': 'Year'},
+    'noExpenses': {'esp': 'No hay gastos', 'eng': 'No expenses'},
+    'noIncome': {'esp': 'No hay ingresos', 'eng': 'No income'},
+    'noDataForPeriod': {
+      'esp': 'No hay datos en este período',
+      'eng': 'No data for this period',
+    },
+    'yesterday': {'esp': 'Ayer', 'eng': 'Yesterday'},
+    'transaction': {'esp': 'transacción', 'eng': 'transaction'},
+    'transactions': {'esp': 'transacciones', 'eng': 'transactions'},
+    'noTitle': {'esp': 'Sin título', 'eng': 'No title'},
+    'daysAgo': {'esp': 'días atrás', 'eng': 'days ago'},
+    'inDays': {'esp': 'En X días', 'eng': 'In X days'},
+    'finished': {'esp': 'Finalizada', 'eng': 'Finished'},
+    'endsToday': {'esp': 'Finaliza hoy', 'eng': 'Ends today'},
+    'endsInDays': {'esp': 'Finaliza en X días', 'eng': 'Ends in X days'},
+    'endsOn': {'esp': 'Finaliza el', 'eng': 'Ends on'},
+    'manageYourSubscription': {
+      'esp': 'Gestiona tu suscripción',
+      'eng': 'Manage your subscription',
+    },
+    'pauseSubtitle': {
+      'esp': 'Detener temporalmente',
+      'eng': 'Temporarily stop',
+    },
+    'resumeSubtitle': {
+      'esp': 'Reactivar suscripción',
+      'eng': 'Reactivate subscription',
+    },
+    'deleteSubtitle': {
+      'esp': 'Eliminar permanentemente',
+      'eng': 'Permanently delete',
+    },
+    'noLimitConfigured': {
+      'esp': 'Sin límite configurado',
+      'eng': 'No limit configured',
+    },
+    'management': {'esp': 'Gestión', 'eng': 'Management'},
+    'weekStart': {'esp': 'Inicio de semana', 'eng': 'Week start'},
+    'monday': {'esp': 'Lunes', 'eng': 'Monday'},
+    'sunday': {'esp': 'Domingo', 'eng': 'Sunday'},
+    'restoreCategories': {
+      'esp': 'Restaurar Categorías',
+      'eng': 'Restore Categories',
+    },
+    'restoreCategoriesDescription': {
+      'esp':
+          'Restaurar categorías por defecto (elimina categorías personalizadas)',
+      'eng': 'Restore default categories (removes custom categories)',
+    },
+    'notifications': {'esp': 'Notificaciones', 'eng': 'Notifications'},
+    'notificationsPermissionRequired': {
+      'esp': 'Se necesitan permisos para las notificaciones',
+      'eng': 'Permissions required for notifications',
+    },
+    'testNotification': {
+      'esp': 'Probar Notificación',
+      'eng': 'Test Notification',
+    },
+    'sendTestNotification': {
+      'esp': 'Enviar notificación de prueba',
+      'eng': 'Send test notification',
+    },
+    'premiumModeTesting': {
+      'esp': 'Modo Premium (Pruebas)',
+      'eng': 'Premium Mode (Testing)',
+    },
+    'sendingTestNotification': {
+      'esp': 'Enviando notificación de prueba...',
+      'eng': 'Sending test notification...',
+    },
+    'setMonthlyExpenseLimit': {
+      'esp':
+          'Establece un límite de gastos para el mes. La barra de progreso en el dashboard te ayudará a controlar tus gastos.',
+      'eng':
+          'Set a monthly expense limit. The progress bar in the dashboard will help you control your expenses.',
+    },
+    'removeLimit': {'esp': 'Eliminar límite', 'eng': 'Remove limit'},
+    'enterValidValue': {
+      'esp': 'Por favor ingresa un valor válido',
+      'eng': 'Please enter a valid value',
+    },
+    'categoriesUpdated': {
+      'esp': 'Categorías actualizadas con nuevos iconos',
+      'eng': 'Categories updated with new icons',
+    },
+    'updateIcons': {'esp': 'Actualizar Iconos', 'eng': 'Update Icons'},
+    'categoriesRestoredSuccessfully': {
+      'esp': 'Categorías restauradas correctamente',
+      'eng': 'Categories restored successfully',
+    },
+    'errorRestoringCategories': {
+      'esp': 'Error al restaurar categorías',
+      'eng': 'Error restoring categories',
+    },
+    'weeklyLimit': {'esp': 'Límite mensual', 'eng': 'Monthly limit'},
+    'exampleAmount': {'esp': 'Ej: 1000.00', 'eng': 'Ex: 1000.00'},
+    'maxAccountsReached': {
+      'esp': 'Límite de cuentas alcanzado',
+      'eng': 'Account limit reached',
+    },
+    'freeAccountLimitMessage': {
+      'esp':
+          'La versión gratuita permite hasta 2 cuentas. Actualiza a Premium para agregar cuentas ilimitadas.',
+      'eng':
+          'The free version allows up to 2 accounts. Upgrade to Premium to add unlimited accounts.',
+    },
+    'upgradeToPremium': {
+      'esp': 'Actualizar a Premium',
+      'eng': 'Upgrade to Premium',
+    },
+    'accountsLimit': {
+      'esp': 'Cuentas: {current} de {limit}',
+      'eng': 'Accounts: {current} of {limit}',
+    },
+    'unlimitedAccounts': {
+      'esp': 'Cuentas ilimitadas',
+      'eng': 'Unlimited accounts',
+    },
+    'purchaseSuccessful': {
+      'esp':
+          '¡Compra exitosa! Ahora tienes acceso a todas las funciones Premium.',
+      'eng':
+          'Purchase successful! You now have access to all Premium features.',
+    },
+    'purchaseError': {
+      'esp': 'Error al procesar la compra. Por favor intenta de nuevo.',
+      'eng': 'Error processing purchase. Please try again.',
+    },
+    'selectPlan': {
+      'esp': 'Selecciona tu plan Premium',
+      'eng': 'Select your Premium plan',
+    },
+    'premiumFeaturesIncluded': {
+      'esp': 'Incluye todas las funciones Premium',
+      'eng': 'Includes all Premium features',
+    },
+    'bestValue': {'esp': 'Mejor valor', 'eng': 'Best value'},
   };
 }

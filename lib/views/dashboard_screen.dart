@@ -8,9 +8,11 @@ import '../constants/app_constants.dart';
 import '../widgets/cards/balance_card.dart';
 import '../widgets/charts/transaction_chart.dart';
 import '../widgets/cards/recent_transactions.dart';
+import '../widgets/cards/expense_limit_card.dart';
 import '../services/feedback_service.dart';
 import '../widgets/inputs/custom_floating_action_button.dart';
 import '../widgets/forms/transaction_form.dart';
+import '../widgets/account_selector.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -44,6 +46,11 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Selector de cuenta
+              const AccountSelector(),
+
+              const SizedBox(height: AppConstants.defaultPadding),
+
               // Tarjeta de balance
               BalanceCard(
                 totalIncome: transactionStats.totalIncome,
@@ -53,11 +60,13 @@ class DashboardScreen extends ConsumerWidget {
 
               const SizedBox(height: AppConstants.defaultPadding),
 
+              // Tarjeta de límite de gastos
+              const ExpenseLimitCard(),
+
+              const SizedBox(height: AppConstants.defaultPadding),
+
               // Gráfico de transacciones
-              TransactionChart(
-                income: transactionStats.totalIncome,
-                expenses: transactionStats.totalExpenses,
-              ),
+              const TransactionChart(),
 
               const SizedBox(height: AppConstants.defaultPadding),
 

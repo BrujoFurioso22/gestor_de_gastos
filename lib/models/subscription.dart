@@ -1,5 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
+import '../providers/app_config_provider.dart';
 
 part 'subscription.g.dart';
 
@@ -47,6 +49,9 @@ class Subscription extends HiveObject {
   @HiveField(13)
   final DateTime nextPaymentDate;
 
+  @HiveField(14)
+  final String? accountId;
+
   Subscription({
     String? id,
     required this.name,
@@ -62,6 +67,7 @@ class Subscription extends HiveObject {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? nextPaymentDate,
+    this.accountId,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now(),
@@ -80,6 +86,7 @@ class Subscription extends HiveObject {
     String? color,
     bool? isActive,
     DateTime? nextPaymentDate,
+    String? accountId,
   }) {
     return Subscription(
       id: id,
@@ -93,6 +100,7 @@ class Subscription extends HiveObject {
       icon: icon ?? this.icon,
       color: color ?? this.color,
       isActive: isActive ?? this.isActive,
+      accountId: accountId ?? this.accountId,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       nextPaymentDate:
@@ -180,6 +188,11 @@ class Subscription extends HiveObject {
     return nextPaymentDate.isBefore(DateTime.now());
   }
 
+  /// Verifica si la suscripción ha expirado (fecha de fin ya pasó)
+  bool get isExpired {
+    return endDate != null && endDate!.isBefore(DateTime.now());
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -193,6 +206,7 @@ class Subscription extends HiveObject {
       'icon': icon,
       'color': color,
       'isActive': isActive,
+      'accountId': accountId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'nextPaymentDate': nextPaymentDate.toIso8601String(),
@@ -215,6 +229,7 @@ class Subscription extends HiveObject {
       icon: json['icon'],
       color: json['color'],
       isActive: json['isActive'] ?? true,
+      accountId: json['accountId'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
       nextPaymentDate: DateTime.parse(json['nextPaymentDate']),
@@ -268,6 +283,23 @@ extension SubscriptionFrequencyExtension on SubscriptionFrequency {
         return 'Trim';
       case SubscriptionFrequency.yearly:
         return 'Año';
+    }
+  }
+
+  String getTranslatedShortName(WidgetRef ref) {
+    final isEnglish = ref.read(appConfigProvider).language == 'en';
+
+    switch (this) {
+      case SubscriptionFrequency.daily:
+        return isEnglish ? 'Day' : 'Día';
+      case SubscriptionFrequency.weekly:
+        return isEnglish ? 'Week' : 'Sem';
+      case SubscriptionFrequency.monthly:
+        return isEnglish ? 'Month' : 'Mes';
+      case SubscriptionFrequency.quarterly:
+        return isEnglish ? 'Qtr' : 'Trim';
+      case SubscriptionFrequency.yearly:
+        return isEnglish ? 'Year' : 'Año';
     }
   }
 }

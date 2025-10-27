@@ -3,7 +3,6 @@ import '../models/subscription.dart';
 import '../models/transaction.dart';
 import '../services/hive_service.dart';
 import '../services/timer_service.dart';
-import 'transaction_provider.dart';
 
 /// Provider para todas las suscripciones
 final subscriptionsProvider =
@@ -86,22 +85,80 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     });
   }
 
-  /// Carga todas las suscripciones desde Hive
+  /// Carga todas las suscripciones desde Hive (filtradas por cuenta actual)
   void _loadSubscriptions() {
-    state = HiveService.getAllSubscriptions();
+    final allSubscriptions = HiveService.getAllSubscriptions();
+    final appConfig = HiveService.getAppConfig();
+    final currentAccountId = appConfig.currentAccountId;
+
+    // Si hay una cuenta actual, filtrar por ella
+    if (currentAccountId != null) {
+      state = allSubscriptions.where((subscription) {
+        return subscription.accountId == currentAccountId;
+      }).toList();
+    } else {
+      state = allSubscriptions;
+    }
+
+    // Verificar y pausar suscripciones expiradas automáticamente
+    // Usar Future.microtask para evitar problemas con métodos asíncronos
+    Future.microtask(() => _checkAndPauseExpiredSubscriptions());
+  }
+
+  /// Verifica y pausa automáticamente las suscripciones cuya fecha de fin ya pasó
+  Future<void> _checkAndPauseExpiredSubscriptions() async {
+    final now = DateTime.now();
+    final subscriptionsToUpdate = <Subscription>[];
+
+    for (final subscription in state) {
+      if (subscription.isActive && subscription.endDate != null) {
+        final endDate = DateTime(
+          subscription.endDate!.year,
+          subscription.endDate!.month,
+          subscription.endDate!.day,
+        );
+        final today = DateTime(now.year, now.month, now.day);
+
+        // Si la fecha de fin ya pasó, pausar la suscripción
+        if (endDate.isBefore(today) || endDate.isAtSameMomentAs(today)) {
+          final updatedSubscription = subscription.copyWith(isActive: false);
+          subscriptionsToUpdate.add(updatedSubscription);
+        }
+      }
+    }
+
+    // Actualizar todas las suscripciones expiradas
+    for (final subscription in subscriptionsToUpdate) {
+      await HiveService.updateSubscription(subscription);
+      print(
+        '⏸️ Suscripción "${subscription.name}" pausada automáticamente (fecha de fin: ${subscription.endDate})',
+      );
+    }
+
+    // Recargar las suscripciones si hubo cambios (evitar bucle infinito)
+    if (subscriptionsToUpdate.isNotEmpty) {
+      state = HiveService.getAllSubscriptions();
+    }
   }
 
   /// Agrega una nueva suscripción
   Future<void> addSubscription(Subscription subscription) async {
     print('🔄 Agregando suscripción: ${subscription.name}');
-    await HiveService.addSubscription(subscription);
+
+    // Asignar la cuenta actual si no tiene
+    final appConfig = HiveService.getAppConfig();
+    final subscriptionWithAccount = subscription.copyWith(
+      accountId: subscription.accountId ?? appConfig.currentAccountId,
+    );
+
+    await HiveService.addSubscription(subscriptionWithAccount);
     print('✅ Suscripción guardada en Hive');
     _loadSubscriptions();
     print('📊 Suscripciones cargadas: ${state.length}');
 
     // Programar recordatorio si está activa
-    if (subscription.isActive) {
-      await scheduleReminder(subscription);
+    if (subscriptionWithAccount.isActive) {
+      await scheduleReminder(subscriptionWithAccount);
     }
   }
 
@@ -173,6 +230,23 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     final today = DateTime(now.year, now.month, now.day);
 
     for (final subscription in state) {
+      // No procesar si la suscripción ya expiró (tiene endDate pasado)
+      if (subscription.endDate != null) {
+        final endDate = DateTime(
+          subscription.endDate!.year,
+          subscription.endDate!.month,
+          subscription.endDate!.day,
+        );
+        if (endDate.isBefore(today) || endDate.isAtSameMomentAs(today)) {
+          // Pausar si está activa
+          if (subscription.isActive) {
+            await updateSubscription(subscription.copyWith(isActive: false));
+          }
+          continue; // No procesar pagos para suscripciones expiradas
+        }
+      }
+
+      // Procesar pago automático solo para suscripciones activas no expiradas
       if (subscription.isActive &&
               subscription.nextPaymentDate.isBefore(today) ||
           subscription.nextPaymentDate.isAtSameMomentAs(today)) {
@@ -250,18 +324,17 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     final transaction = Transaction(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       amount: subscription.amount,
-      description: 'Pago automático - ${subscription.name}',
+      title: 'Pago automático - ${subscription.name}',
       category: 'expense_subscriptions',
       type: TransactionType.expense,
       date: DateTime.now(),
-      icon: subscription.icon,
-      color: subscription.color,
+      notes: null,
     );
 
     // Guardar la transacción en Hive
     await HiveService.addTransaction(transaction);
 
-    print('💳 Transacción automática creada: ${transaction.description}');
+    print('💳 Transacción automática creada: ${transaction.title}');
   }
 
   /// Obtiene suscripciones por frecuencia

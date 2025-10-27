@@ -2,16 +2,39 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import 'notification_service.dart';
+import '../services/hive_service.dart';
 
 class TimerService {
   static final Map<String, Timer> _activeTimers = {};
   static final Map<String, DateTime> _scheduledTimes = {};
+
+  /// Verifica si las notificaciones están habilitadas
+  static bool _areNotificationsEnabled() {
+    try {
+      final appConfig = HiveService.getAppConfig();
+      debugPrint(
+        '🔔 Estado de notificaciones: ${appConfig.notificationsEnabled}',
+      );
+      return appConfig.notificationsEnabled;
+    } catch (e) {
+      debugPrint('⚠️ Error leyendo configuración de notificaciones: $e');
+      return true; // Por defecto habilitadas si hay error
+    }
+  }
 
   /// Programa un recordatorio para una suscripción usando Timer
   static Future<void> scheduleSubscriptionReminder(
     Subscription subscription,
     DateTime reminderDate,
   ) async {
+    // Verificar si las notificaciones están habilitadas
+    if (!_areNotificationsEnabled()) {
+      debugPrint(
+        '🔕 Notificaciones deshabilitadas, no se programa el recordatorio',
+      );
+      return;
+    }
+
     final subscriptionId = subscription.id;
 
     // Cancelar timer existente si existe
@@ -24,6 +47,13 @@ class TimerService {
       debugPrint(
         '⚠️ La fecha ya pasó para ${subscription.name}, mostrando notificación inmediata',
       );
+      // Verificar si las notificaciones están habilitadas antes de enviar
+      if (!_areNotificationsEnabled()) {
+        debugPrint(
+          '🔕 Notificaciones deshabilitadas, cancelando recordatorio inmediato',
+        );
+        return;
+      }
       await NotificationService.showSubscriptionReminder(
         subscriptionName: subscription.name,
         subscriptionId: subscription.id,
@@ -37,6 +67,12 @@ class TimerService {
 
     // Crear y guardar el timer
     final timer = Timer(delay, () async {
+      // Verificar nuevamente antes de enviar
+      if (!_areNotificationsEnabled()) {
+        debugPrint('🔕 Notificaciones deshabilitadas, cancelando recordatorio');
+        return;
+      }
+
       debugPrint(
         '🔔 Ejecutando recordatorio programado para ${subscription.name}',
       );
@@ -62,6 +98,14 @@ class TimerService {
   static Future<void> scheduleAllSubscriptionReminders(
     List<Subscription> subscriptions,
   ) async {
+    // Verificar si las notificaciones están habilitadas antes de programar
+    if (!_areNotificationsEnabled()) {
+      debugPrint(
+        '🔕 Notificaciones deshabilitadas, no se programan recordatorios',
+      );
+      return;
+    }
+
     debugPrint(
       '🔄 Programando recordatorios para ${subscriptions.length} suscripciones',
     );

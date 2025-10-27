@@ -19,38 +19,57 @@ class HistoryScreen extends ConsumerStatefulWidget {
   ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends ConsumerState<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen>
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
-  TransactionType? _selectedType;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final transactions = ref.watch(
-      filteredTransactionsProvider(
-        TransactionFilter(
-          type: _selectedType,
-          searchQuery: _searchController.text.isEmpty
-              ? null
-              : _searchController.text,
-        ),
-      ),
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: Text(SimpleLocalization.getText(ref, 'history')),
-        actions: [
-          IconButton(
-            icon: HugeIcon(icon: HugeIconsStrokeRounded.filter, size: 20),
-            onPressed: _showFilterDialog,
-          ),
-        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: SimpleLocalization.getText(ref, 'all')),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HugeIcon(icon: HugeIconsStrokeRounded.money01, size: 16),
+                  const SizedBox(width: 4),
+                  Text(SimpleLocalization.getText(ref, 'income')),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HugeIcon(icon: HugeIconsStrokeRounded.dollar01, size: 16),
+                  const SizedBox(width: 4),
+                  Text(SimpleLocalization.getText(ref, 'expenses')),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -69,21 +88,175 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
           ),
 
-          // Lista de transacciones
+          // Lista de transacciones agrupadas por día con tabs
           Expanded(
-            child: transactions.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    itemCount: transactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = transactions[index];
-                      return _buildTransactionItem(transaction);
-                    },
-                  ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Tab: Todas las transacciones
+                _buildTransactionsList(null),
+                // Tab: Solo ingresos
+                _buildTransactionsList(TransactionType.income),
+                // Tab: Solo gastos
+                _buildTransactionsList(TransactionType.expense),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildTransactionsList(TransactionType? filterType) {
+    final transactions = ref.watch(
+      filteredTransactionsProvider(
+        TransactionFilter(
+          type: filterType,
+          searchQuery: _searchController.text.isEmpty
+              ? null
+              : _searchController.text,
+        ),
+      ),
+    );
+
+    return transactions.isEmpty
+        ? _buildEmptyState()
+        : _buildGroupedTransactions(transactions);
+  }
+
+  Widget _buildGroupedTransactions(List<Transaction> transactions) {
+    final theme = Theme.of(context);
+
+    // Agrupar transacciones por día
+    final groupedTransactions = <String, List<Transaction>>{};
+
+    for (final transaction in transactions) {
+      final dayKey = _getDayKey(transaction.date);
+      if (!groupedTransactions.containsKey(dayKey)) {
+        groupedTransactions[dayKey] = [];
+      }
+      groupedTransactions[dayKey]!.add(transaction);
+    }
+
+    final sortedDays = groupedTransactions.keys.toList()
+      ..sort((a, b) {
+        // Orden personalizado: today > yesterday > fechas (más recientes primero)
+        if (a == 'today') return -1;
+        if (b == 'today') return 1;
+        if (a == 'yesterday') return -1;
+        if (b == 'yesterday') return 1;
+        return b.compareTo(a); // Para fechas, más recientes primero
+      });
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: AppConstants.defaultPadding),
+      itemCount: sortedDays.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final dayKey = sortedDays[index];
+        final dayTransactions = groupedTransactions[dayKey]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header del día
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.defaultPadding,
+                vertical: AppConstants.smallPadding,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HugeIcon(
+                          icon: HugeIconsStrokeRounded.calendar01,
+                          size: 16,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatDayKey(dayKey),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${dayTransactions.length} ${dayTransactions.length == 1 ? SimpleLocalization.getText(ref, 'transaction') : SimpleLocalization.getText(ref, 'transactions')}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Transacciones del día
+            ...dayTransactions.map(
+              (transaction) => _buildTransactionItem(transaction),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getDayKey(DateTime date) {
+    final today = DateTime.now();
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day) {
+      return 'today';
+    } else if (date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day) {
+      return 'yesterday';
+    } else {
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  String _formatDayKey(String key) {
+    if (key == 'today') {
+      return SimpleLocalization.getText(ref, 'today');
+    } else if (key == 'yesterday') {
+      return SimpleLocalization.getText(ref, 'yesterday');
+    } else {
+      final parts = key.split('-');
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2]);
+      final date = DateTime(year, month, day);
+
+      return AppFormatters.formatDate(date, ref);
+    }
   }
 
   Widget _buildTransactionItem(Transaction transaction) {
@@ -156,7 +329,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               categoryByIdProvider(transaction.category),
             );
             final displayTitle =
-                transaction.title ?? category?.name ?? 'Sin título';
+                transaction.title ??
+                category?.name ??
+                SimpleLocalization.getText(ref, 'noTitle');
             return Text(
               displayTitle,
               style: theme.textTheme.bodyLarge?.copyWith(
@@ -165,26 +340,16 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             );
           },
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppFormatters.formatDate(transaction.date, ref),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (transaction.notes != null && transaction.notes!.isNotEmpty)
-              Text(
+        subtitle: transaction.notes != null && transaction.notes!.isNotEmpty
+            ? Text(
                 transaction.notes!,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
+              )
+            : null,
         trailing: Consumer(
           builder: (context, ref, child) {
             final category = ref.watch(
@@ -257,62 +422,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'filterTransactions')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<TransactionType?>(
-              value: _selectedType,
-              decoration: InputDecoration(
-                labelText: SimpleLocalization.getText(ref, 'transactionType'),
-              ),
-              items: [
-                DropdownMenuItem(
-                  value: null,
-                  child: Text(
-                    SimpleLocalization.getText(ref, 'allTransactions'),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: TransactionType.income,
-                  child: Text(SimpleLocalization.getText(ref, 'income')),
-                ),
-                DropdownMenuItem(
-                  value: TransactionType.expense,
-                  child: Text(SimpleLocalization.getText(ref, 'expenses')),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _selectedType = null;
-              });
-              Navigator.pop(context);
-            },
-            child: Text(SimpleLocalization.getText(ref, 'clear')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'apply')),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showEditTransactionDialog(Transaction transaction) {
     showModalBottomSheet(
       context: context,
@@ -337,7 +446,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               categoryByIdProvider(transaction.category),
             );
             final displayTitle =
-                transaction.title ?? category?.name ?? 'Sin título';
+                transaction.title ??
+                category?.name ??
+                SimpleLocalization.getText(ref, 'noTitle');
             return Text(
               SimpleLocalization.getText(
                 ref,

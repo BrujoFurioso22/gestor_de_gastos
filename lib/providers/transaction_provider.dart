@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/transaction.dart';
 import '../services/hive_service.dart';
+import 'account_provider.dart';
 
 /// Provider para todas las transacciones
 final transactionsProvider =
@@ -18,7 +19,20 @@ final filteredTransactionsProvider =
 /// Provider para estadísticas de transacciones
 final transactionStatsProvider = Provider<TransactionStats>((ref) {
   final transactions = ref.watch(transactionsProvider);
-  return _calculateStats(transactions);
+  final stats = _calculateStats(transactions);
+
+  // Agregar el balance inicial de la cuenta actual
+  final currentAccount = ref.watch(currentAccountProvider);
+  final initialBalance = currentAccount?.initialBalance ?? 0.0;
+  final adjustedBalance = stats.balance + initialBalance;
+
+  return TransactionStats(
+    totalIncome: stats.totalIncome,
+    totalExpenses: stats.totalExpenses,
+    balance: adjustedBalance,
+    transactionCount: stats.transactionCount,
+    categoryStats: stats.categoryStats,
+  );
 });
 
 /// Provider para transacciones del mes actual
@@ -71,14 +85,31 @@ class TransactionNotifier extends StateNotifier<List<Transaction>> {
     _loadTransactions();
   }
 
-  /// Carga todas las transacciones desde Hive
+  /// Carga todas las transacciones desde Hive (filtradas por cuenta actual)
   void _loadTransactions() {
-    state = HiveService.getAllTransactions();
+    final allTransactions = HiveService.getAllTransactions();
+    final appConfig = HiveService.getAppConfig();
+    final currentAccountId = appConfig.currentAccountId;
+
+    // Si hay una cuenta actual, filtrar por ella
+    if (currentAccountId != null) {
+      state = allTransactions.where((transaction) {
+        return transaction.accountId == currentAccountId;
+      }).toList();
+    } else {
+      state = allTransactions;
+    }
   }
 
   /// Agrega una nueva transacción
   Future<void> addTransaction(Transaction transaction) async {
-    await HiveService.addTransaction(transaction);
+    // Asignar la cuenta actual si no tiene
+    final appConfig = HiveService.getAppConfig();
+    final transactionWithAccount = transaction.copyWith(
+      accountId: transaction.accountId ?? appConfig.currentAccountId,
+    );
+
+    await HiveService.addTransaction(transactionWithAccount);
     _loadTransactions();
   }
 
@@ -160,7 +191,7 @@ List<Transaction> _filterTransactions(
   List<Transaction> transactions,
   TransactionFilter filter,
 ) {
-  return transactions.where((transaction) {
+  final filtered = transactions.where((transaction) {
     // Filtro por tipo
     if (filter.type != null && transaction.type != filter.type) {
       return false;
@@ -192,6 +223,11 @@ List<Transaction> _filterTransactions(
 
     return true;
   }).toList();
+
+  // Ordenar por fecha (más recientes primero)
+  filtered.sort((a, b) => b.date.compareTo(a.date));
+
+  return filtered;
 }
 
 /// Calcula estadísticas de las transacciones

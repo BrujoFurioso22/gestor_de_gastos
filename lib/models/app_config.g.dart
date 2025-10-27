@@ -17,28 +17,42 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AppConfig(
-      currency: fields[0] as String,
-      dateFormat: fields[1] as String,
-      decimalSeparator: fields[2] as String,
-      showCents: fields[3] as bool,
-      theme: fields[4] as String,
-      fontSize: fields[5] as String,
-      language: fields[6] as String,
-      vibration: fields[7] as bool,
-      sound: fields[8] as bool,
-      subscriptionReminderDays: fields[9] as int,
-      expenseNotifications: fields[10] as bool,
-      dailyExpenseLimit: fields[11] as double,
-      weeklySummary: fields[12] as bool,
-      createdAt: fields[13] as DateTime?,
-      updatedAt: fields[14] as DateTime?,
+      currency: fields[0] as String? ?? 'USD',
+      dateFormat: fields[1] as String? ?? 'DD/MM/YYYY',
+      decimalSeparator: fields[2] as String? ?? '.',
+      showCents: fields[3] as bool? ?? true,
+      theme: fields[4] as String? ?? 'system',
+      fontSize: fields[5] as String? ?? 'normal',
+      language: fields[6] as String? ?? 'es',
+      vibration: fields[7] as bool? ?? true,
+      sound: fields[8] as bool? ?? true,
+      subscriptionReminderDays: fields[9] as int? ?? 3,
+      notificationsEnabled: fields.containsKey(10) && fields[10] is bool
+          ? fields[10] as bool
+          : true,
+      monthlyExpenseLimit: fields.containsKey(11)
+          ? (fields[11] as num?)?.toDouble() ?? 0.0
+          : 0.0,
+      weeklySummary: fields.containsKey(12) && fields[12] is bool
+          ? fields[12] as bool
+          : false,
+      weekStartsOnMonday: fields.containsKey(13) && fields[13] is bool
+          ? fields[13] as bool
+          : true,
+      currentAccountId: fields.containsKey(16) ? fields[16] as String? : null,
+      createdAt: fields.containsKey(14) && fields[14] is DateTime
+          ? fields[14] as DateTime?
+          : null,
+      updatedAt: fields.containsKey(15) && fields[15] is DateTime
+          ? fields[15] as DateTime?
+          : null,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppConfig obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.currency)
       ..writeByte(1)
@@ -60,15 +74,19 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       ..writeByte(9)
       ..write(obj.subscriptionReminderDays)
       ..writeByte(10)
-      ..write(obj.expenseNotifications)
+      ..write(obj.notificationsEnabled)
       ..writeByte(11)
-      ..write(obj.dailyExpenseLimit)
+      ..write(obj.monthlyExpenseLimit)
       ..writeByte(12)
       ..write(obj.weeklySummary)
       ..writeByte(13)
-      ..write(obj.createdAt)
+      ..write(obj.weekStartsOnMonday)
       ..writeByte(14)
-      ..write(obj.updatedAt);
+      ..write(obj.createdAt)
+      ..writeByte(15)
+      ..write(obj.updatedAt)
+      ..writeByte(16)
+      ..write(obj.currentAccountId);
   }
 
   @override

@@ -32,6 +32,9 @@ class Transaction extends HiveObject {
   @HiveField(8)
   final DateTime updatedAt;
 
+  @HiveField(9)
+  final String? accountId;
+
   Transaction({
     String? id,
     required this.type,
@@ -42,6 +45,7 @@ class Transaction extends HiveObject {
     this.notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    this.accountId,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
@@ -53,6 +57,7 @@ class Transaction extends HiveObject {
     String? category,
     DateTime? date,
     String? notes,
+    String? accountId,
   }) {
     return Transaction(
       id: id,
@@ -62,6 +67,7 @@ class Transaction extends HiveObject {
       category: category ?? this.category,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      accountId: accountId ?? this.accountId,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -76,6 +82,7 @@ class Transaction extends HiveObject {
       'category': category,
       'date': date.toIso8601String(),
       'notes': notes,
+      'accountId': accountId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -93,6 +100,7 @@ class Transaction extends HiveObject {
       category: json['category'],
       date: DateTime.parse(json['date']),
       notes: json['notes'],
+      accountId: json['accountId'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );

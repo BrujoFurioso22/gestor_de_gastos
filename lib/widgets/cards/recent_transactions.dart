@@ -25,35 +25,132 @@ class RecentTransactions extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  SimpleLocalization.getText(ref, 'recentTransactions'),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Navegar a la pantalla de historial
-                  },
-                  child: Text(SimpleLocalization.getText(ref, 'viewAll')),
-                ),
-              ],
+            Text(
+              SimpleLocalization.getText(ref, 'recentTransactions'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: AppConstants.smallPadding),
             if (transactions.isEmpty)
               _buildEmptyState(context, ref)
             else
-              ...transactions.map(
-                (transaction) =>
-                    _buildTransactionItem(context, ref, transaction),
-              ),
+              _buildGroupedTransactions(context, ref),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildGroupedTransactions(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
+    // Agrupar transacciones por día
+    final groupedTransactions = <String, List<Transaction>>{};
+
+    for (final transaction in transactions) {
+      final dayKey = _getDayKey(transaction.date);
+      if (!groupedTransactions.containsKey(dayKey)) {
+        groupedTransactions[dayKey] = [];
+      }
+      groupedTransactions[dayKey]!.add(transaction);
+    }
+
+    final sortedDays = groupedTransactions.keys.toList()
+      ..sort((a, b) {
+        // Orden personalizado: today > yesterday > fechas (más recientes primero)
+        if (a == 'today') return -1;
+        if (b == 'today') return 1;
+        if (a == 'yesterday') return -1;
+        if (b == 'yesterday') return 1;
+        return b.compareTo(a); // Para fechas, más recientes primero
+      });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final dayKey in sortedDays) ...[
+          // Header del día
+          Padding(
+            padding: EdgeInsets.only(
+              top: dayKey == sortedDays.first ? 0 : 8,
+              bottom: 4,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HugeIcon(
+                    icon: HugeIconsStrokeRounded.calendar01,
+                    size: 14,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatDayKey(dayKey, ref),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  if (groupedTransactions[dayKey]!.length > 1) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '· ${groupedTransactions[dayKey]!.length}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          // Transacciones del día
+          for (final transaction in groupedTransactions[dayKey]!)
+            _buildTransactionItem(context, ref, transaction),
+        ],
+      ],
+    );
+  }
+
+  String _getDayKey(DateTime date) {
+    final today = DateTime.now();
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day) {
+      return 'today';
+    } else if (date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day) {
+      return 'yesterday';
+    } else {
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  String _formatDayKey(String key, WidgetRef ref) {
+    if (key == 'today') {
+      return SimpleLocalization.getText(ref, 'today');
+    } else if (key == 'yesterday') {
+      return SimpleLocalization.getText(ref, 'yesterday');
+    } else {
+      final parts = key.split('-');
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2]);
+      final date = DateTime(year, month, day);
+
+      return AppFormatters.formatDate(date, ref);
+    }
   }
 
   Widget _buildTransactionItem(
@@ -137,12 +234,16 @@ class RecentTransactions extends ConsumerWidget {
             );
           },
         ),
-        subtitle: Text(
-          AppFormatters.formatDate(transaction.date, ref),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        subtitle: transaction.notes != null && transaction.notes!.isNotEmpty
+            ? Text(
+                transaction.notes!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
         trailing: Text(
           AppFormatters.formatAmountWithSign(
             isIncome ? transaction.amount : -transaction.amount,

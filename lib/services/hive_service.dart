@@ -4,6 +4,7 @@ import '../models/category.dart';
 import '../models/app_settings.dart';
 import '../models/subscription.dart';
 import '../models/app_config.dart';
+import '../models/account.dart';
 import '../constants/app_constants.dart';
 
 class HiveService {
@@ -12,6 +13,7 @@ class HiveService {
   static late Box<AppSettings> _settingsBox;
   static late Box<Subscription> _subscriptionsBox;
   static late Box<AppConfig> _appConfigBox;
+  static late Box<Account> _accountsBox;
 
   /// Inicializa Hive y abre las cajas
   static Future<void> init() async {
@@ -31,6 +33,7 @@ class HiveService {
     Hive.registerAdapter(AppThemeAdapter());
     Hive.registerAdapter(FontSizeAdapter());
     Hive.registerAdapter(LanguageAdapter());
+    Hive.registerAdapter(AccountAdapter());
 
     // Abrir cajas
     _transactionsBox = await Hive.openBox<Transaction>(
@@ -48,6 +51,7 @@ class HiveService {
     _appConfigBox = await Hive.openBox<AppConfig>(
       AppConstants.appConfigBoxName,
     );
+    _accountsBox = await Hive.openBox<Account>('accounts');
 
     // Inicializar datos por defecto si es necesario
     await _initializeDefaultData();
@@ -70,6 +74,21 @@ class HiveService {
     if (_settingsBox.isEmpty) {
       final defaultSettings = AppSettings();
       await _settingsBox.put('default', defaultSettings);
+    }
+
+    // Inicializar cuenta por defecto si no hay cuentas
+    if (_accountsBox.isEmpty) {
+      final defaultAccount = Account(
+        id: 'default',
+        name: 'Cuenta Principal',
+        initialBalance: 0.0,
+      );
+      await _accountsBox.put('default', defaultAccount);
+
+      // Establecer como cuenta actual en AppConfig
+      final appConfig = getAppConfig();
+      final updatedConfig = appConfig.copyWith(currentAccountId: 'default');
+      await updateAppConfig(updatedConfig);
     }
   }
 
@@ -137,6 +156,9 @@ class HiveService {
   static Box<Subscription> get subscriptionsBox => _subscriptionsBox;
   static Box<AppConfig> get appConfigBox => _appConfigBox;
 
+  /// Obtiene la caja de cuentas
+  static Box<Account> get accountsBox => _accountsBox;
+
   /// Cierra todas las cajas
   static Future<void> close() async {
     await _transactionsBox.close();
@@ -144,6 +166,7 @@ class HiveService {
     await _settingsBox.close();
     await _subscriptionsBox.close();
     await _appConfigBox.close();
+    await _accountsBox.close();
   }
 
   /// Limpia todos los datos
@@ -153,6 +176,7 @@ class HiveService {
     await _settingsBox.clear();
     await _subscriptionsBox.clear();
     await _appConfigBox.clear();
+    await _accountsBox.clear();
     await _initializeDefaultData();
   }
 
@@ -466,5 +490,41 @@ class HiveService {
   /// Verifica si el sonido está habilitado
   static bool isSoundEnabled() {
     return getAppConfig().sound;
+  }
+
+  // ========== MÉTODOS DE CUENTAS ==========
+
+  /// Obtiene todas las cuentas
+  static List<Account> getAllAccounts() {
+    return _accountsBox.values.toList();
+  }
+
+  /// Agrega una cuenta
+  static Future<void> addAccount(Account account) async {
+    await _accountsBox.put(account.id, account);
+  }
+
+  /// Actualiza una cuenta
+  static Future<void> updateAccount(Account account) async {
+    await _accountsBox.put(account.id, account);
+  }
+
+  /// Elimina una cuenta
+  static Future<void> deleteAccount(String accountId) async {
+    await _accountsBox.delete(accountId);
+  }
+
+  /// Obtiene una cuenta por ID
+  static Account? getAccount(String accountId) {
+    return _accountsBox.get(accountId);
+  }
+
+  /// Obtiene la cuenta actual
+  static Account? getCurrentAccount() {
+    final appConfig = getAppConfig();
+    if (appConfig.currentAccountId == null) {
+      return null;
+    }
+    return getAccount(appConfig.currentAccountId!);
   }
 }

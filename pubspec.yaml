@@ -64,6 +64,9 @@ dependencies:
   # Navegación
   go_router: ^14.2.7
 
+  # In-app purchases
+  in_app_purchase: ^3.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

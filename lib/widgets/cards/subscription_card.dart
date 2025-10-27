@@ -5,6 +5,7 @@ import 'package:hugeicons/styles/stroke_rounded.dart';
 import '../../models/subscription.dart';
 import '../../utils/app_formatters.dart';
 import '../../constants/app_constants.dart';
+import '../../services/simple_localization.dart';
 
 class SubscriptionCard extends ConsumerWidget {
   final Subscription subscription;
@@ -23,8 +24,6 @@ class SubscriptionCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isOverdue = subscription.isOverdue;
-    final isDueSoon = subscription.isDueSoon;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
@@ -32,11 +31,7 @@ class SubscriptionCard extends ConsumerWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         side: BorderSide(
-          color: isOverdue
-              ? Colors.red.withOpacity(0.2)
-              : isDueSoon
-              ? Colors.orange.withOpacity(0.2)
-              : theme.colorScheme.outline.withOpacity(0.1),
+          color: theme.colorScheme.outline.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -83,7 +78,12 @@ class SubscriptionCard extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                subscription.isActive ? 'Activa' : 'Inactiva',
+                                subscription.isActive
+                                    ? SimpleLocalization.getText(ref, 'active')
+                                    : SimpleLocalization.getText(
+                                        ref,
+                                        'inactive',
+                                      ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: subscription.isActive
                                       ? Colors.green
@@ -117,7 +117,7 @@ class SubscriptionCard extends ConsumerWidget {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => _showModernActionMenu(context, theme),
+                        onTap: () => _showModernActionMenu(context, theme, ref),
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(2),
@@ -139,64 +139,29 @@ class SubscriptionCard extends ConsumerWidget {
                   Expanded(
                     child: _buildPaymentInfo(
                       theme,
-                      'Costo',
+                      SimpleLocalization.getText(ref, 'cost'),
                       AppFormatters.formatCurrency(subscription.amount, ref),
-                      subscription.frequency.shortName,
+                      subscription.frequency.getTranslatedShortName(ref),
                     ),
                   ),
                   Expanded(
                     child: _buildPaymentInfo(
                       theme,
-                      'Próximo pago',
+                      SimpleLocalization.getText(ref, 'nextPayment'),
                       AppFormatters.formatDate(
                         subscription.nextPaymentDate,
                         ref,
                       ),
-                      _getDaysUntilPayment(),
+                      _getDaysUntilPayment(ref),
                     ),
                   ),
                 ],
               ),
 
-              // Alertas
-              if (isOverdue || isDueSoon) ...[
+              // Información de fecha de fin si existe
+              if (subscription.endDate != null) ...[
                 const SizedBox(height: AppConstants.smallPadding),
-                Container(
-                  padding: const EdgeInsets.all(AppConstants.smallPadding),
-                  decoration: BoxDecoration(
-                    color: isOverdue
-                        ? Colors.red.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.smallBorderRadius,
-                    ),
-                    border: Border.all(
-                      color: isOverdue ? Colors.red : Colors.orange,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      HugeIcon(
-                        icon: isOverdue
-                            ? HugeIconsStrokeRounded.alert01
-                            : HugeIconsStrokeRounded.clock01,
-                        color: isOverdue ? Colors.red : Colors.orange,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          isOverdue ? 'Pago vencido' : 'Pago próximo a vencer',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: isOverdue ? Colors.red : Colors.orange,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildEndDateWarning(context, theme, ref),
               ],
 
               // Notas (si existen)
@@ -270,22 +235,99 @@ class SubscriptionCard extends ConsumerWidget {
     );
   }
 
-  String _getDaysUntilPayment() {
+  String _getDaysUntilPayment(WidgetRef ref) {
     final now = DateTime.now();
     final days = subscription.nextPaymentDate.difference(now).inDays;
 
-    if (days < 0) {
-      return 'Vencido';
-    } else if (days == 0) {
-      return 'Hoy';
+    if (days == 0) {
+      return SimpleLocalization.getText(ref, 'today');
     } else if (days == 1) {
-      return 'Mañana';
+      return SimpleLocalization.getText(ref, 'tomorrow');
+    } else if (days < 0) {
+      return '${-days} ${SimpleLocalization.getText(ref, 'daysAgo')}';
     } else {
-      return '$days días';
+      return '${SimpleLocalization.getText(ref, 'inDays').replaceAll('X', '$days')}';
     }
   }
 
-  void _showModernActionMenu(BuildContext context, ThemeData theme) {
+  Widget _buildEndDateWarning(
+    BuildContext context,
+    ThemeData theme,
+    WidgetRef ref,
+  ) {
+    if (subscription.endDate == null) return const SizedBox.shrink();
+
+    final now = DateTime.now();
+    final endDate = DateTime(
+      subscription.endDate!.year,
+      subscription.endDate!.month,
+      subscription.endDate!.day,
+    );
+    final today = DateTime(now.year, now.month, now.day);
+    final daysUntilEnd = endDate.difference(today).inDays;
+
+    // Determinar color y mensaje según qué tan cerca esté de expirar
+    Color warningColor;
+    String message;
+    List<List<dynamic>> icon;
+
+    if (daysUntilEnd < 0) {
+      // Ya expiró pero aún no se ha pausado
+      warningColor = Colors.grey;
+      message = SimpleLocalization.getText(ref, 'finished');
+      icon = HugeIconsStrokeRounded.alert01;
+    } else if (daysUntilEnd == 0) {
+      // Expira hoy
+      warningColor = Colors.red;
+      message = SimpleLocalization.getText(ref, 'endsToday');
+      icon = HugeIconsStrokeRounded.alert01;
+    } else if (daysUntilEnd <= 7) {
+      // Expira en los próximos 7 días
+      warningColor = Colors.orange;
+      final dayText = daysUntilEnd == 1
+          ? SimpleLocalization.getText(ref, 'day')
+          : SimpleLocalization.getText(ref, 'days');
+      message =
+          '${SimpleLocalization.getText(ref, 'endsInDays').replaceAll('X', '$daysUntilEnd')} $dayText';
+      icon = HugeIconsStrokeRounded.clock01;
+    } else {
+      // Expira en más de 7 días
+      warningColor = Colors.blue;
+      message =
+          '${SimpleLocalization.getText(ref, 'endsOn')} ${AppFormatters.formatDate(subscription.endDate!, ref)}';
+      icon = HugeIconsStrokeRounded.calendar01;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.smallPadding),
+      decoration: BoxDecoration(
+        color: warningColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+        border: Border.all(color: warningColor, width: 1),
+      ),
+      child: Row(
+        children: [
+          HugeIcon(icon: icon, color: warningColor, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: warningColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showModernActionMenu(
+    BuildContext context,
+    ThemeData theme,
+    WidgetRef ref,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -338,14 +380,17 @@ class SubscriptionCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Acciones',
+                          SimpleLocalization.getText(ref, 'actions'),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
                         Text(
-                          'Gestiona tu suscripción',
+                          SimpleLocalization.getText(
+                            ref,
+                            'manageYourSubscription',
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -369,10 +414,12 @@ class SubscriptionCard extends ConsumerWidget {
                     icon: subscription.isActive
                         ? HugeIconsStrokeRounded.pause
                         : HugeIconsStrokeRounded.play,
-                    title: subscription.isActive ? 'Pausar' : 'Reanudar',
+                    title: subscription.isActive
+                        ? SimpleLocalization.getText(ref, 'pause')
+                        : SimpleLocalization.getText(ref, 'resume'),
                     subtitle: subscription.isActive
-                        ? 'Detener temporalmente'
-                        : 'Reactivar suscripción',
+                        ? SimpleLocalization.getText(ref, 'pauseSubtitle')
+                        : SimpleLocalization.getText(ref, 'resumeSubtitle'),
                     color: subscription.isActive ? Colors.orange : Colors.green,
                     onTap: () {
                       Navigator.pop(context);
@@ -385,8 +432,8 @@ class SubscriptionCard extends ConsumerWidget {
                     context: context,
                     theme: theme,
                     icon: HugeIconsStrokeRounded.delete01,
-                    title: 'Eliminar',
-                    subtitle: 'Eliminar permanentemente',
+                    title: SimpleLocalization.getText(ref, 'delete'),
+                    subtitle: SimpleLocalization.getText(ref, 'deleteSubtitle'),
                     color: Colors.red,
                     onTap: () {
                       Navigator.pop(context);

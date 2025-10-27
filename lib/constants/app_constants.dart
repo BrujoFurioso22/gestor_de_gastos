@@ -1,6 +1,6 @@
 class AppConstants {
   // Información de la app
-  static const String appName = 'MiControl';
+  static const String appName = 'CuidaTuPlata';
   static const String appVersion = '1.0.0';
 
   // Configuración de AdMob
