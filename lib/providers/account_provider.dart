@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/hive_service.dart';
+import 'app_config_provider.dart';
 
 final accountProvider = StateNotifierProvider<AccountNotifier, List<Account>>((
   ref,
@@ -12,7 +13,7 @@ final currentAccountProvider = Provider<Account?>((ref) {
   final accounts = ref.watch(accountProvider);
   if (accounts.isEmpty) return null;
 
-  final appConfig = HiveService.getAppConfig();
+  final appConfig = ref.watch(appConfigProvider);
   final currentAccountId = appConfig.currentAccountId;
 
   if (currentAccountId == null) return null;

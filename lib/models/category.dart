@@ -122,11 +122,9 @@ class DefaultCategories {
 
   /// Obtiene el nombre traducido de una categoría por defecto
   static String getTranslatedName(String categoryId, String language) {
-    print('🔍 Buscando traducción para: $categoryId en idioma: $language');
 
     final translations = _categoryTranslations[categoryId];
     if (translations == null) {
-      print('❌ No se encontraron traducciones para: $categoryId');
       return categoryId;
     }
 
@@ -134,7 +132,6 @@ class DefaultCategories {
         ? (translations['en'] ?? translations['es'] ?? categoryId)
         : (translations['es'] ?? categoryId);
 
-    print('✅ Traducción encontrada: $result');
     return result;
   }
 

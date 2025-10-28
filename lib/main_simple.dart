@@ -15,18 +15,18 @@ void main() async {
   // Inicializar AdMob
   await AdMobService.init();
 
-  runApp(const ProviderScope(child: MiControlAppSimple()));
+  runApp(const ProviderScope(child: CuidaTuPlataAppSimple()));
 }
 
-class MiControlAppSimple extends ConsumerWidget {
-  const MiControlAppSimple({super.key});
+class CuidaTuPlataAppSimple extends ConsumerWidget {
+  const CuidaTuPlataAppSimple({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(isDarkModeProvider);
 
     return MaterialApp(
-      title: 'MiControl',
+      title: 'CuidaTuPlata',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

@@ -114,7 +114,6 @@ class HiveService {
 
   /// Actualiza las traducciones de categorías por defecto cuando cambia el idioma
   static Future<void> updateCategoryTranslations(String language) async {
-    print('🔄 Actualizando traducciones de categorías para idioma: $language');
 
     for (final categoryId in DefaultCategories.defaultCategoryIds) {
       final existingCategory = _categoriesBox.get(categoryId);
@@ -123,24 +122,15 @@ class HiveService {
           categoryId,
           language,
         );
-        print('📝 Categoría: $categoryId');
-        print('   Nombre actual: ${existingCategory.name}');
-        print('   Nombre traducido: $translatedName');
 
         if (existingCategory.name != translatedName) {
           final updatedCategory = existingCategory.copyWith(
             name: translatedName,
           );
           await _categoriesBox.put(categoryId, updatedCategory);
-          print('✅ Actualizada: ${existingCategory.name} → $translatedName');
-        } else {
-          print('⏭️ Sin cambios necesarios');
         }
-      } else {
-        print('❌ Categoría no encontrada: $categoryId');
       }
     }
-    print('✅ Traducciones de categorías completadas');
   }
 
   /// Obtiene la caja de transacciones
@@ -337,9 +327,7 @@ class HiveService {
 
   /// Agrega una suscripción
   static Future<void> addSubscription(Subscription subscription) async {
-    print('💾 Guardando suscripción en Hive: ${subscription.id}');
     await _subscriptionsBox.put(subscription.id, subscription);
-    print('✅ Suscripción guardada exitosamente');
   }
 
   /// Actualiza una suscripción
@@ -442,9 +430,7 @@ class HiveService {
 
   /// Actualiza la configuración de la app
   static Future<void> updateAppConfig(AppConfig config) async {
-    print('💾 Actualizando configuración de la app');
     await _appConfigBox.put('default', config);
-    print('✅ Configuración actualizada exitosamente');
   }
 
   /// Obtiene la configuración de moneda

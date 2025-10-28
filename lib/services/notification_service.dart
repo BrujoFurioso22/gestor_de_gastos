@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'simple_localization.dart';
+import '../services/hive_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+
+  /// Obtiene el texto traducido según el idioma configurado
+  static String _getTranslatedText(String key) {
+    try {
+      final appConfig = HiveService.getAppConfig();
+      final isEnglish = appConfig.language == 'en';
+      return SimpleLocalization.getTextByKey(key, isEnglish);
+    } catch (e) {
+      // Si hay error, devolver la clave
+      return key;
+    }
+  }
 
   /// Inicializa el servicio de notificaciones
   static Future<void> initialize() async {
@@ -47,11 +61,13 @@ class NotificationService {
   }) async {
     await initialize();
 
-    const AndroidNotificationDetails androidDetails =
+    final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           'immediate_notifications',
-          'Notificaciones Inmediatas',
-          channelDescription: 'Notificaciones que se muestran inmediatamente',
+          _getTranslatedText('immediateNotifications'),
+          channelDescription: _getTranslatedText(
+            'immediateNotificationsDescription',
+          ),
           importance: Importance.max,
           priority: Priority.max,
           icon: '@mipmap/ic_launcher',
@@ -65,7 +81,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -85,8 +101,8 @@ class NotificationService {
     required String subscriptionId,
   }) async {
     await showImmediateNotification(
-      title: 'Recordatorio de Pago',
-      body: '$subscriptionName vence hoy. ¡No olvides pagarlo!',
+      title: _getTranslatedText('paymentReminder'),
+      body: '$subscriptionName ${_getTranslatedText('subscriptionDueSoon')}',
       payload: 'subscription_$subscriptionId',
     );
   }

@@ -19,11 +19,6 @@ class PurchaseHelper {
       if (purchase.pendingCompletePurchase) {
         await inAppPurchase.completePurchase(purchase);
       }
-    } else if (purchase.status == PurchaseStatus.error) {
-      // Manejar errores
-      print('Error en la compra: ${purchase.error}');
-    } else if (purchase.status == PurchaseStatus.canceled) {
-      print('Compra cancelada por el usuario');
     }
   }
 }

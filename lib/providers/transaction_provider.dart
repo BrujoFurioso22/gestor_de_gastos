@@ -2,11 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/transaction.dart';
 import '../services/hive_service.dart';
 import 'account_provider.dart';
+import 'app_config_provider.dart';
 
 /// Provider para todas las transacciones
 final transactionsProvider =
     StateNotifierProvider<TransactionNotifier, List<Transaction>>((ref) {
-      return TransactionNotifier();
+      return TransactionNotifier(ref);
     });
 
 /// Provider para transacciones filtradas
@@ -81,15 +82,28 @@ final searchTransactionsProvider = Provider.family<List<Transaction>, String>((
 
 /// Notifier para manejar las transacciones
 class TransactionNotifier extends StateNotifier<List<Transaction>> {
-  TransactionNotifier() : super([]) {
+  final Ref _ref;
+
+  TransactionNotifier(this._ref) : super([]) {
     _loadTransactions();
+
+    // Escuchar cambios en la configuración de la app para recargar transacciones
+    _ref.listen(appConfigProvider, (previous, next) {
+      if (previous?.currentAccountId != next.currentAccountId) {
+        _loadTransactions();
+      }
+    });
+
+    // Asignar accountId a transacciones existentes que no lo tengan
+    Future.microtask(() => assignAccountIdToExistingTransactions());
   }
 
   /// Carga todas las transacciones desde Hive (filtradas por cuenta actual)
   void _loadTransactions() {
     final allTransactions = HiveService.getAllTransactions();
-    final appConfig = HiveService.getAppConfig();
+    final appConfig = _ref.read(appConfigProvider);
     final currentAccountId = appConfig.currentAccountId;
+
 
     // Si hay una cuenta actual, filtrar por ella
     if (currentAccountId != null) {
@@ -99,12 +113,13 @@ class TransactionNotifier extends StateNotifier<List<Transaction>> {
     } else {
       state = allTransactions;
     }
+
   }
 
   /// Agrega una nueva transacción
   Future<void> addTransaction(Transaction transaction) async {
     // Asignar la cuenta actual si no tiene
-    final appConfig = HiveService.getAppConfig();
+    final appConfig = _ref.read(appConfigProvider);
     final transactionWithAccount = transaction.copyWith(
       accountId: transaction.accountId ?? appConfig.currentAccountId,
     );
@@ -133,6 +148,34 @@ class TransactionNotifier extends StateNotifier<List<Transaction>> {
   /// Refresca la lista de transacciones
   void refresh() {
     _loadTransactions();
+  }
+
+  /// Asigna accountId a transacciones existentes que no lo tengan
+  Future<void> assignAccountIdToExistingTransactions() async {
+    final allTransactions = HiveService.getAllTransactions();
+    final appConfig = _ref.read(appConfigProvider);
+    final currentAccountId = appConfig.currentAccountId;
+
+    if (currentAccountId == null) return;
+
+    final transactionsToUpdate = <Transaction>[];
+
+    for (final transaction in allTransactions) {
+      if (transaction.accountId == null) {
+        final updatedTransaction = transaction.copyWith(
+          accountId: currentAccountId,
+        );
+        transactionsToUpdate.add(updatedTransaction);
+      }
+    }
+
+    if (transactionsToUpdate.isNotEmpty) {
+      
+      for (final transaction in transactionsToUpdate) {
+        await HiveService.updateTransaction(transaction);
+      }
+      _loadTransactions();
+    }
   }
 }
 

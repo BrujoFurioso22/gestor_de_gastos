@@ -134,7 +134,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
             // Nombre de la app
             Text(
-              'MiControl',
+              'CuidaTuPlata',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,

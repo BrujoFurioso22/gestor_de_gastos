@@ -21,17 +21,13 @@ class AdMobService {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          print('Banner ad loaded');
         },
         onAdFailedToLoad: (ad, error) {
-          print('Banner ad failed to load: $error');
           ad.dispose();
         },
         onAdOpened: (ad) {
-          print('Banner ad opened');
         },
         onAdClosed: (ad) {
-          print('Banner ad closed');
         },
       ),
     );
@@ -54,7 +50,6 @@ class AdMobService {
       await _bannerAd!.load();
       return _bannerAd;
     } catch (e) {
-      print('Error loading banner ad: $e');
       return null;
     }
   }
@@ -88,12 +83,10 @@ class AdMobService {
             _showInterstitialAd();
           },
           onAdFailedToLoad: (error) {
-            print('Interstitial ad failed to load: $error');
           },
         ),
       );
     } catch (e) {
-      print('Error loading interstitial ad: $e');
     }
   }
 
@@ -102,16 +95,13 @@ class AdMobService {
     if (_interstitialAd != null) {
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdShowedFullScreenContent: (ad) {
-          print('Interstitial ad showed full screen content');
         },
         onAdDismissedFullScreenContent: (ad) {
-          print('Interstitial ad dismissed');
           ad.dispose();
           _interstitialAd = null;
           _updateAdShownTime();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
-          print('Interstitial ad failed to show: $error');
           ad.dispose();
           _interstitialAd = null;
         },

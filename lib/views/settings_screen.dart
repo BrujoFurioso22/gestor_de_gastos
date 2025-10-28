@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
 import '../providers/settings_provider.dart';
-import '../providers/admob_provider.dart';
 import '../providers/app_config_provider.dart';
 import '../services/simple_localization.dart';
 import '../constants/app_constants.dart';
@@ -336,14 +335,6 @@ class SettingsScreen extends ConsumerWidget {
               HugeIconsStrokeRounded.notification01,
               () => _showReminderDaysDialog(context, ref),
             ),
-            _buildListTile(
-              context,
-              ref,
-              SimpleLocalization.getText(ref, 'testNotification'),
-              SimpleLocalization.getText(ref, 'sendTestNotification'),
-              HugeIconsStrokeRounded.testTube,
-              () => _testNotification(context, ref),
-            ),
           ],
         ),
 
@@ -373,18 +364,6 @@ class SettingsScreen extends ConsumerWidget {
               HugeIconsStrokeRounded.star,
               (value) => ref.read(settingsProvider.notifier).setPremium(value),
             ),
-            // Solo mostrar opción de anuncios si NO es premium
-            if (!isPremium)
-              _buildSwitchTile(
-                context,
-                ref,
-                SimpleLocalization.getText(ref, 'ads'),
-                !isPremium,
-                HugeIconsStrokeRounded.megaphone01,
-                (value) =>
-                    ref.read(adMobStateProvider.notifier).setAdsEnabled(value),
-                enabled: !isPremium,
-              ),
           ],
         ),
 
@@ -656,11 +635,18 @@ class SettingsScreen extends ConsumerWidget {
               ),
               value: day,
               groupValue: ref.read(appConfigProvider).subscriptionReminderDays,
-              onChanged: (value) {
+              onChanged: (value) async {
                 if (value != null) {
-                  ref
+                  await ref
                       .read(appConfigProvider.notifier)
                       .updateSubscriptionReminderDays(value);
+
+                  // Reprogramar todos los recordatorios con la nueva configuración
+                  final subscriptions = ref.read(subscriptionsProvider);
+                  await TimerService.scheduleAllSubscriptionReminders(
+                    subscriptions,
+                  );
+
                   Navigator.pop(context);
                 }
               },
@@ -1189,59 +1175,6 @@ class SettingsScreen extends ConsumerWidget {
             content: Text(
               '${SimpleLocalization.getText(ref, 'exportError')}: $e',
             ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Método para probar notificaciones
-  void _testNotification(BuildContext context, WidgetRef ref) async {
-    try {
-      // Mostrar diálogo de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Enviando notificación de prueba...'),
-            ],
-          ),
-        ),
-      );
-
-      // Enviar notificación de prueba
-      await NotificationService.showImmediateNotification(
-        title: '🧪 Notificación de Prueba',
-        body: '¡Las notificaciones están funcionando correctamente!',
-        payload: 'test_notification',
-      );
-
-      // Cerrar diálogo de carga
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar mensaje de éxito
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Notificación de prueba enviada'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      // Cerrar diálogo de carga si está abierto
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar error
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error enviando notificación: $e'),
             backgroundColor: Colors.red,
           ),
         );

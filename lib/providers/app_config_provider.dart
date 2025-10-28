@@ -29,7 +29,6 @@ class AppConfigNotifier extends StateNotifier<AppConfig> {
       state = HiveService.getAppConfig();
     } catch (e) {
       // Si Hive no está inicializado, usar configuración por defecto
-      print('⚠️ Hive no inicializado, usando configuración por defecto: $e');
       state = AppConfig();
     }
   }
@@ -78,15 +77,12 @@ class AppConfigNotifier extends StateNotifier<AppConfig> {
 
   /// Actualiza el idioma
   Future<void> updateLanguage(String language) async {
-    print('🌐 Cambiando idioma a: $language');
 
     final newConfig = state.copyWith(language: language);
     await updateConfig(newConfig);
-    print('✅ Configuración actualizada');
 
     // Actualizar traducciones de categorías por defecto
     await HiveService.updateCategoryTranslations(language);
-    print('✅ Traducciones de categorías actualizadas');
   }
 
   /// Actualiza la vibración

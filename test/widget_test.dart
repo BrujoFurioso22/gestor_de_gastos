@@ -11,12 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mi_control/widgets/app_initializer.dart';
 
 void main() {
-  testWidgets('MiControl app smoke test', (WidgetTester tester) async {
+  testWidgets('CuidaTuPlata app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const ProviderScope(child: AppInitializer()));
 
     // Verify that the app loads with the main navigation
-    expect(find.text('MiControl'), findsOneWidget);
+    expect(find.text('CuidaTuPlata'), findsOneWidget);
     expect(find.text('Inicio'), findsOneWidget);
     expect(find.text('Historial'), findsOneWidget);
     expect(find.text('Configuración'), findsOneWidget);

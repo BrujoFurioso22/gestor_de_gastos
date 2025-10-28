@@ -42,7 +42,7 @@ class AppInitializer extends ConsumerWidget {
     );
 
     return MaterialApp(
-      title: 'MiControl',
+      title: 'CuidaTuPlata',
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
       darkTheme: darkTheme,

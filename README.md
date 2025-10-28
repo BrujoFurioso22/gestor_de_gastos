@@ -1,4 +1,4 @@
-# MiControl - Gestor de Gastos
+# CuidaTuPlata - Gestor de Gastos
 
 Una aplicación Flutter moderna para controlar ingresos y gastos de manera simple y visual.
 
@@ -298,4 +298,4 @@ Si tienes problemas o preguntas:
 
 ---
 
-**MiControl** - Controla tus finanzas de manera simple y efectiva 💰
+**CuidaTuPlata** - Controla tus finanzas de manera simple y efectiva 💰

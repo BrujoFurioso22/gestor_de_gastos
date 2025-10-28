@@ -106,16 +106,22 @@ class TimerService {
       return;
     }
 
+    // Obtener la configuración de días de anticipación
+    final appConfig = HiveService.getAppConfig();
+    final reminderDays = appConfig.subscriptionReminderDays;
+
     debugPrint(
-      '🔄 Programando recordatorios para ${subscriptions.length} suscripciones',
+      '🔄 Programando recordatorios para ${subscriptions.length} suscripciones (${reminderDays} días de anticipación)',
     );
 
     for (final subscription in subscriptions) {
       if (subscription.isActive) {
-        await scheduleSubscriptionReminder(
-          subscription,
-          subscription.nextPaymentDate,
+        // Calcular la fecha de recordatorio restando los días de anticipación
+        final reminderDate = subscription.nextPaymentDate.subtract(
+          Duration(days: reminderDays),
         );
+
+        await scheduleSubscriptionReminder(subscription, reminderDate);
       }
     }
 
@@ -164,6 +170,16 @@ class TimerService {
     DateTime newReminderDate,
   ) async {
     debugPrint('🔄 Actualizando recordatorio para ${subscription.name}');
-    await scheduleSubscriptionReminder(subscription, newReminderDate);
+
+    // Obtener la configuración de días de anticipación
+    final appConfig = HiveService.getAppConfig();
+    final reminderDays = appConfig.subscriptionReminderDays;
+
+    // Calcular la fecha de recordatorio restando los días de anticipación
+    final reminderDate = subscription.nextPaymentDate.subtract(
+      Duration(days: reminderDays),
+    );
+
+    await scheduleSubscriptionReminder(subscription, reminderDate);
   }
 }

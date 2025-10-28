@@ -6,10 +6,10 @@ class SimpleLocalization {
     final appConfig = ref.read(appConfigProvider);
     final isEnglish = appConfig.language == 'en';
 
-    return _getTextByKey(key, isEnglish);
+    return getTextByKey(key, isEnglish);
   }
 
-  static String _getTextByKey(String key, bool isEnglish) {
+  static String getTextByKey(String key, bool isEnglish) {
     final translation = _translations[key];
     if (translation == null) return key;
 
@@ -20,7 +20,7 @@ class SimpleLocalization {
 
   static const Map<String, Map<String, String>> _translations = {
     'before': {'esp': 'antes', 'eng': 'before'},
-    'appTitle': {'esp': 'MiControl', 'eng': 'MiControl'},
+    'appTitle': {'esp': 'CuidaTuPlata', 'eng': 'CuidaTuPlata'},
     'dashboard': {'esp': 'Inicio', 'eng': 'Dashboard'},
     'history': {'esp': 'Historial', 'eng': 'History'},
     'subscriptions': {'esp': 'Suscripciones', 'eng': 'Subscriptions'},
@@ -73,10 +73,6 @@ class SimpleLocalization {
     'subscriptionActive': {'esp': 'Activa', 'eng': 'Active'},
     'subscriptionInactive': {'esp': 'Inactiva', 'eng': 'Inactive'},
     'subscriptionOverdue': {'esp': 'Pago vencido', 'eng': 'Payment overdue'},
-    'subscriptionDueSoon': {
-      'esp': 'Pago próximo a vencer',
-      'eng': 'Payment due soon',
-    },
     'monthly': {'esp': 'Mensual', 'eng': 'Monthly'},
     'yearly': {'esp': 'Anual', 'eng': 'Yearly'},
     'weekly': {'esp': 'Semanal', 'eng': 'Weekly'},
@@ -661,5 +657,33 @@ class SimpleLocalization {
       'eng': 'Includes all Premium features',
     },
     'bestValue': {'esp': 'Mejor valor', 'eng': 'Best value'},
+    'workingCorrectly': {
+      'esp': 'están funcionando correctamente',
+      'eng': 'are working correctly',
+    },
+    'testNotificationSent': {
+      'esp': 'Notificación de prueba enviada',
+      'eng': 'Test notification sent',
+    },
+    'errorSendingNotification': {
+      'esp': 'Error enviando notificación',
+      'eng': 'Error sending notification',
+    },
+    'paymentReminder': {
+      'esp': 'Recordatorio de Pago',
+      'eng': 'Payment Reminder',
+    },
+    'subscriptionDueSoon': {
+      'esp': 'vence pronto. ¡No olvides pagarlo!',
+      'eng': 'is due soon. Don\'t forget to pay it!',
+    },
+    'immediateNotifications': {
+      'esp': 'Notificaciones Inmediatas',
+      'eng': 'Immediate Notifications',
+    },
+    'immediateNotificationsDescription': {
+      'esp': 'Notificaciones que se muestran inmediatamente',
+      'eng': 'Notifications that are shown immediately',
+    },
   };
 }

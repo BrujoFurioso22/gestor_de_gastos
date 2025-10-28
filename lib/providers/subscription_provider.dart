@@ -3,11 +3,12 @@ import '../models/subscription.dart';
 import '../models/transaction.dart';
 import '../services/hive_service.dart';
 import '../services/timer_service.dart';
+import 'app_config_provider.dart';
 
 /// Provider para todas las suscripciones
 final subscriptionsProvider =
     StateNotifierProvider<SubscriptionNotifier, List<Subscription>>((ref) {
-      return SubscriptionNotifier();
+      return SubscriptionNotifier(ref);
     });
 
 /// Provider para suscripciones activas
@@ -69,12 +70,24 @@ final searchSubscriptionsProvider = Provider.family<List<Subscription>, String>(
 
 /// Notifier para manejar las suscripciones
 class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
-  SubscriptionNotifier() : super([]) {
+  final Ref _ref;
+
+  SubscriptionNotifier(this._ref) : super([]) {
     _loadSubscriptions();
     // Procesar pagos automáticos al inicializar
     processAutomaticPayments();
     // Programar recordatorios para suscripciones activas
     _initializeReminders();
+
+    // Escuchar cambios en la configuración de la app para recargar suscripciones
+    _ref.listen(appConfigProvider, (previous, next) {
+      if (previous?.currentAccountId != next.currentAccountId) {
+        _loadSubscriptions();
+      }
+    });
+
+    // Asignar accountId a suscripciones existentes que no lo tengan
+    Future.microtask(() => assignAccountIdToExistingSubscriptions());
   }
 
   /// Inicializa los recordatorios para todas las suscripciones activas
@@ -88,7 +101,7 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
   /// Carga todas las suscripciones desde Hive (filtradas por cuenta actual)
   void _loadSubscriptions() {
     final allSubscriptions = HiveService.getAllSubscriptions();
-    final appConfig = HiveService.getAppConfig();
+    final appConfig = _ref.read(appConfigProvider);
     final currentAccountId = appConfig.currentAccountId;
 
     // Si hay una cuenta actual, filtrar por ella
@@ -130,9 +143,7 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     // Actualizar todas las suscripciones expiradas
     for (final subscription in subscriptionsToUpdate) {
       await HiveService.updateSubscription(subscription);
-      print(
-        '⏸️ Suscripción "${subscription.name}" pausada automáticamente (fecha de fin: ${subscription.endDate})',
-      );
+      
     }
 
     // Recargar las suscripciones si hubo cambios (evitar bucle infinito)
@@ -143,18 +154,15 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
 
   /// Agrega una nueva suscripción
   Future<void> addSubscription(Subscription subscription) async {
-    print('🔄 Agregando suscripción: ${subscription.name}');
 
     // Asignar la cuenta actual si no tiene
-    final appConfig = HiveService.getAppConfig();
+    final appConfig = _ref.read(appConfigProvider);
     final subscriptionWithAccount = subscription.copyWith(
       accountId: subscription.accountId ?? appConfig.currentAccountId,
     );
 
     await HiveService.addSubscription(subscriptionWithAccount);
-    print('✅ Suscripción guardada en Hive');
     _loadSubscriptions();
-    print('📊 Suscripciones cargadas: ${state.length}');
 
     // Programar recordatorio si está activa
     if (subscriptionWithAccount.isActive) {
@@ -164,9 +172,7 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
 
   /// Actualiza una suscripción existente
   Future<void> updateSubscription(Subscription subscription) async {
-    print('🔄 Actualizando suscripción: ${subscription.name}');
     await HiveService.updateSubscription(subscription);
-    print('✅ Suscripción actualizada en Hive');
     _loadSubscriptions();
 
     // Actualizar recordatorio
@@ -179,13 +185,11 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
 
   /// Elimina una suscripción
   Future<void> deleteSubscription(String subscriptionId) async {
-    print('🔄 Eliminando suscripción: $subscriptionId');
 
     // Cancelar recordatorio antes de eliminar
     cancelReminder(subscriptionId);
 
     await HiveService.deleteSubscription(subscriptionId);
-    print('✅ Suscripción eliminada de Hive');
     _loadSubscriptions();
   }
 
@@ -197,6 +201,33 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
   /// Refresca la lista de suscripciones
   void refresh() {
     _loadSubscriptions();
+  }
+
+  /// Asigna accountId a suscripciones existentes que no lo tengan
+  Future<void> assignAccountIdToExistingSubscriptions() async {
+    final allSubscriptions = HiveService.getAllSubscriptions();
+    final appConfig = _ref.read(appConfigProvider);
+    final currentAccountId = appConfig.currentAccountId;
+
+    if (currentAccountId == null) return;
+
+    final subscriptionsToUpdate = <Subscription>[];
+
+    for (final subscription in allSubscriptions) {
+      if (subscription.accountId == null) {
+        final updatedSubscription = subscription.copyWith(
+          accountId: currentAccountId,
+        );
+        subscriptionsToUpdate.add(updatedSubscription);
+      }
+    }
+
+    if (subscriptionsToUpdate.isNotEmpty) {
+      for (final subscription in subscriptionsToUpdate) {
+        await HiveService.updateSubscription(subscription);
+      }
+      _loadSubscriptions();
+    }
   }
 
   /// Marca una suscripción como pagada (actualiza la próxima fecha de pago)
@@ -314,9 +345,6 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     // Reprogramar la notificación para el próximo pago
     await scheduleReminder(updatedSubscription);
 
-    print('💰 Pago automático procesado para: ${subscription.name}');
-    print('📅 Nueva fecha de pago: $newPaymentDate');
-    print('⏰ Recordatorio reprogramado para el próximo pago');
   }
 
   /// Crea una transacción automática para el pago de suscripción
@@ -334,7 +362,6 @@ class SubscriptionNotifier extends StateNotifier<List<Subscription>> {
     // Guardar la transacción en Hive
     await HiveService.addTransaction(transaction);
 
-    print('💳 Transacción automática creada: ${transaction.title}');
   }
 
   /// Obtiene suscripciones por frecuencia

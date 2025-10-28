@@ -8,7 +8,7 @@
 
 ```xml
 <application
-    android:label="MiControl"  <!-- ⬅️ CAMBIAR AQUÍ -->
+    android:label="CuidaTuPlata"  <!-- ⬅️ CAMBIAR AQUÍ -->
     android:name="${applicationName}"
     android:icon="@mipmap/ic_launcher">
 ```
@@ -19,7 +19,7 @@
 
 ```xml
 <key>CFBundleDisplayName</key>
-<string>MiControl</string>  <!-- ⬅️ CAMBIAR AQUÍ -->
+<string>CuidaTuPlata</string>  <!-- ⬅️ CAMBIAR AQUÍ -->
 ```
 
 ### 3. Web
@@ -28,8 +28,8 @@
 
 ```json
 {
-  "name": "MiControl", // ⬅️ CAMBIAR
-  "short_name": "MiControl" // ⬅️ CAMBIAR
+  "name": "CuidaTuPlata", // ⬅️ CAMBIAR
+  "short_name": "CuidaTuPlata" // ⬅️ CAMBIAR
 }
 ```
 
@@ -38,7 +38,7 @@
 #### Archivo: `macos/Runner/Configs/AppInfo.xcconfig`
 
 ```
-PRODUCT_NAME = MiControl  // ⬅️ CAMBIAR
+PRODUCT_NAME = CuidaTuPlata  // ⬅️ CAMBIAR
 ```
 
 ### 5. Windows
