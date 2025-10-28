@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hugeicons/hugeicons.dart';
-import 'package:hugeicons/styles/stroke_rounded.dart';
 import '../providers/app_config_provider.dart';
 import '../providers/settings_provider.dart';
 import 'main_navigation.dart';
@@ -82,48 +80,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF6750A4),
-                          const Color(0xFF9C27B0),
-                        ],
-                      ),
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6750A4).withOpacity(0.4),
-                          blurRadius: 25,
-                          spreadRadius: 8,
-                          offset: const Offset(0, 8),
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
-                    child: Stack(
-                      children: [
-                        // Icono principal
-                        const Center(
-                          child: HugeIcon(
-                            icon: HugeIconsStrokeRounded.wallet01,
-                            size: 50,
-                            color: Colors.white,
-                          ),
-                        ),
-                        // Efecto de brillo
-                        Positioned(
-                          top: 10,
-                          left: 10,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(25),
+                      child: Image.asset(
+                        'assets/images/CuidaTuPlataIcon.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 );
