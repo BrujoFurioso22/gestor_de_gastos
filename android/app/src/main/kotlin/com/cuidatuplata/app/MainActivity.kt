@@ -1,4 +1,4 @@
-package com.example.gestor_de_gastos
+package com.cuidatuplata.app
 
 import io.flutter.embedding.android.FlutterActivity
 
