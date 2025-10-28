@@ -207,7 +207,7 @@ class SettingsScreen extends ConsumerWidget {
             ref,
             SimpleLocalization.getText(ref, 'restoreCategories'),
             SimpleLocalization.getText(ref, 'restoreCategoriesDescription'),
-            HugeIconsStrokeRounded.arrowLeft01,
+            HugeIconsStrokeRounded.databaseRestore,
             () => _showRestoreCategoriesDialog(context, ref),
           ),
         ]),
@@ -229,18 +229,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
               HugeIconsStrokeRounded.delete01,
               () => _showDeleteDataDialog(context, ref),
-            ),
-            _buildListTile(
-              context,
-              ref,
-              SimpleLocalization.getText(ref, 'exportData'),
-              isPremium
-                  ? SimpleLocalization.getText(ref, 'downloadExcelOrCsv')
-                  : SimpleLocalization.getText(ref, 'requiresPremium'),
-              HugeIconsStrokeRounded.download01,
-              () => isPremium
-                  ? _showExportDataDialog(context, ref)
-                  : _showPremiumDialog(context, ref),
             ),
           ],
         ),
@@ -694,50 +682,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showExportDataDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'exportData')),
-        content: Text(SimpleLocalization.getText(ref, 'selectExportFormat')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'cancel')),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _exportToExcel(context, ref);
-                },
-                icon: HugeIcon(
-                  icon: HugeIconsStrokeRounded.download01,
-                  size: 16,
-                ),
-                label: const Text('Excel'),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _exportToCsv(context, ref);
-                },
-                icon: HugeIcon(
-                  icon: HugeIconsStrokeRounded.download01,
-                  size: 16,
-                ),
-                label: const Text('CSV'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showPremiumDialog(BuildContext context, WidgetRef ref) {
     final isPremium = ref.read(isPremiumProvider);
 
@@ -803,7 +747,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text('• ${SimpleLocalization.getText(ref, 'noAds')}'),
-        Text('• ${SimpleLocalization.getText(ref, 'advancedExport')}'),
         Text('• ${SimpleLocalization.getText(ref, 'prioritySupport')}'),
         Text('• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}'),
       ],
@@ -1048,138 +991,6 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  /// Exporta los datos a Excel
-  void _exportToExcel(BuildContext context, WidgetRef ref) async {
-    try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          content: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(width: 16),
-              Text(SimpleLocalization.getText(ref, 'exportingToExcel')),
-            ],
-          ),
-        ),
-      );
-
-      // Simular proceso de exportación
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Cerrar diálogo de carga
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar mensaje de éxito
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(SimpleLocalization.getText(ref, 'exportCompleted')),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: SimpleLocalization.getText(ref, 'open'),
-              textColor: Colors.white,
-              onPressed: () {
-                // Aquí se abriría el archivo Excel
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      SimpleLocalization.getText(ref, 'fileOpened'),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      // Cerrar diálogo de carga si está abierto
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar error
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${SimpleLocalization.getText(ref, 'exportError')}: $e',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Exporta los datos a CSV
-  void _exportToCsv(BuildContext context, WidgetRef ref) async {
-    try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          content: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(width: 16),
-              Text(SimpleLocalization.getText(ref, 'exportingToCsv')),
-            ],
-          ),
-        ),
-      );
-
-      // Simular proceso de exportación
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Cerrar diálogo de carga
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar mensaje de éxito
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(SimpleLocalization.getText(ref, 'exportCompleted')),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: SimpleLocalization.getText(ref, 'open'),
-              textColor: Colors.white,
-              onPressed: () {
-                // Aquí se abriría el archivo CSV
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      SimpleLocalization.getText(ref, 'fileOpened'),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      // Cerrar diálogo de carga si está abierto
-      if (context.mounted) Navigator.pop(context);
-
-      // Mostrar error
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${SimpleLocalization.getText(ref, 'exportError')}: $e',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   /// Muestra el diálogo para configurar el límite mensual de gastos

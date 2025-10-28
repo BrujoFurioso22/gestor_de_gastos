@@ -67,6 +67,12 @@ dependencies:
   # In-app purchases
   in_app_purchase: ^3.2.1
 
+  # Export functionality
+  excel: ^4.0.6
+  file_picker: ^8.0.0+1
+  path_provider: ^2.1.4
+  share_plus: ^10.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

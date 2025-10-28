@@ -288,6 +288,18 @@ class SimpleLocalization {
       'esp': 'Exportando a Excel...',
       'eng': 'Exporting to Excel...',
     },
+    'exportingToCsv': {
+      'esp': 'Exportando a CSV...',
+      'eng': 'Exporting to CSV...',
+    },
+    'exportCompleted': {
+      'esp': 'Exportación completada',
+      'eng': 'Export completed',
+    },
+    'fileOpened': {'esp': 'Archivo abierto', 'eng': 'File opened'},
+    'exportError': {'esp': 'Error al exportar', 'eng': 'Export error'},
+    'shareFile': {'esp': 'Compartir archivo', 'eng': 'Share file'},
+    'shareError': {'esp': 'Error al compartir', 'eng': 'Share error'},
     'unlockPremiumFeatures': {
       'esp': 'Desbloquea todas las funciones premium:',
       'eng': 'Unlock all premium features:',
