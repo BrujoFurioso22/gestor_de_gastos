@@ -5,11 +5,11 @@ class AppConstants {
 
   // Configuración de AdMob
   static const String adMobAppId =
-      'ca-app-pub-3940256099942544~3347511713'; // ID de prueba
+      'ca-app-pub-2227324033270179~1728374040'; // App ID real (Android)
   static const String adMobBannerId =
-      'ca-app-pub-3940256099942544/6300978111'; // Banner de prueba
+      'ca-app-pub-2227324033270179/4709766061'; // Banner real (Android)
   static const String adMobInterstitialId =
-      'ca-app-pub-3940256099942544/1033173712'; // Interstitial de prueba
+      'ca-app-pub-2227324033270179/1507321696'; // Interstitial real (Android)
 
   // Configuración de anuncios
   static const int adFrequency = 5; // Mostrar anuncio cada 5 aperturas

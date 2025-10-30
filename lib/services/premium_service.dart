@@ -8,8 +8,8 @@ final premiumServiceProvider = Provider<PremiumService>((ref) {
 
 /// IDs de los productos (configurar en Google Play Console y App Store Connect)
 class PremiumProducts {
-  static const String monthlyPlan = 'premium_monthly';
-  static const String yearlyPlan = 'premium_yearly';
+  static const String monthlyPlan = 'susmensual';
+  static const String yearlyPlan = 'susanual';
 
   static const Set<String> productIds = {monthlyPlan, yearlyPlan};
 }

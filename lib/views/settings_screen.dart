@@ -13,6 +13,10 @@ import '../providers/category_provider.dart';
 import '../services/notification_service.dart';
 import '../services/timer_service.dart';
 import '../providers/subscription_provider.dart';
+import 'dart:async';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import '../services/premium_service.dart';
+import '../services/purchase_helper.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -703,53 +707,78 @@ class SettingsScreen extends ConsumerWidget {
                   child: Text(SimpleLocalization.getText(ref, 'close')),
                 ),
               ]
-            : null,
+            : [
+                TextButton(
+                  onPressed: () async {
+                    await ref.read(premiumServiceProvider).restorePurchases();
+                  },
+                  child: Text(SimpleLocalization.getText(ref, 'restore')),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(SimpleLocalization.getText(ref, 'close')),
+                ),
+              ],
       ),
     );
   }
 
   Widget _buildPremiumPurchaseOptions(BuildContext context, WidgetRef ref) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          SimpleLocalization.getText(ref, 'selectPlan'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        // Plan Mensual
-        _buildPurchaseOption(
-          context: context,
-          ref: ref,
-          title: SimpleLocalization.getText(ref, 'monthly'),
-          price: '\$4.99',
-          isBestValue: false,
-          onTap: () => _processPurchase(context, ref, 'monthly'),
-        ),
-        const SizedBox(height: 12),
-        // Plan Anual
-        _buildPurchaseOption(
-          context: context,
-          ref: ref,
-          title: SimpleLocalization.getText(ref, 'yearly'),
-          price: '\$39.99',
-          isBestValue: true,
-          onTap: () => _processPurchase(context, ref, 'yearly'),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text('• ${SimpleLocalization.getText(ref, 'noAds')}'),
-        Text('• ${SimpleLocalization.getText(ref, 'prioritySupport')}'),
-        Text('• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}'),
-      ],
+    return FutureBuilder<ProductDetailsResponse>(
+      future: ref.read(premiumServiceProvider).getProducts(),
+      builder: (context, snapshot) {
+        final loading = !snapshot.hasData;
+        final products = snapshot.data?.productDetails ?? [];
+
+        String priceFor(String id, String fallback) {
+          final found = products.where((p) => p.id == id).toList();
+          return found.isNotEmpty ? found.first.price : fallback;
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              SimpleLocalization.getText(ref, 'selectPlan'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            if (loading) const Center(child: CircularProgressIndicator()),
+            if (!loading) ...[
+              _buildPurchaseOption(
+                context: context,
+                ref: ref,
+                title: SimpleLocalization.getText(ref, 'monthly'),
+                price: priceFor(PremiumProducts.monthlyPlan, '\u2014'),
+                isBestValue: false,
+                onTap: () => _processPurchase(context, ref, 'monthly'),
+              ),
+              const SizedBox(height: 12),
+              _buildPurchaseOption(
+                context: context,
+                ref: ref,
+                title: SimpleLocalization.getText(ref, 'yearly'),
+                price: priceFor(PremiumProducts.yearlyPlan, '\u2014'),
+                isBestValue: true,
+                onTap: () => _processPurchase(context, ref, 'yearly'),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('• ${SimpleLocalization.getText(ref, 'noAds')}'),
+              Text('• ${SimpleLocalization.getText(ref, 'prioritySupport')}'),
+              Text('• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}'),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -828,25 +857,36 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Procesa la compra (simulado por ahora)
-  void _processPurchase(BuildContext context, WidgetRef ref, String plan) {
-    Navigator.pop(context); // Cerrar el diálogo
-
-    // SIMULACIÓN: Activar premium directamente
-    // En producción, aquí se integraría con Google Play Billing o App Store
-    ref.read(settingsProvider.notifier).setPremium(true);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(SimpleLocalization.getText(ref, 'purchaseSuccessful')),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: SimpleLocalization.getText(ref, 'close'),
-          textColor: Colors.white,
-          onPressed: () {},
-        ),
-      ),
+  /// Procesa la compra real
+  Future<void> _processPurchase(
+    BuildContext context,
+    WidgetRef ref,
+    String plan,
+  ) async {
+    final productsResponse = await ref
+        .read(premiumServiceProvider)
+        .getProducts();
+    final products = productsResponse.productDetails;
+    final id = plan == 'monthly'
+        ? PremiumProducts.monthlyPlan
+        : PremiumProducts.yearlyPlan;
+    final product = products.firstWhere(
+      (p) => p.id == id,
+      orElse: () =>
+          products.isNotEmpty ? products.first : throw 'Producto no encontrado',
     );
+
+    await ref.read(premiumServiceProvider).purchaseProduct(product);
+    // Escuchar una vez la actualización de compra y procesarla
+    late StreamSubscription<List<PurchaseDetails>> sub;
+    sub = ref.read(premiumServiceProvider).purchaseUpdates.listen((
+      updates,
+    ) async {
+      for (final purchase in updates) {
+        await PurchaseHelper.processPurchase(purchase, ref);
+      }
+      await sub.cancel();
+    });
   }
 
   void _showResetDialog(BuildContext context, WidgetRef ref) {
