@@ -11,13 +11,21 @@ import '../../constants/app_constants.dart';
 import '../../services/feedback_service.dart';
 import '../../services/simple_localization.dart';
 import '../../utils/app_formatters.dart';
+import '../../utils/icon_utils.dart';
 import '../inputs/modern_toggle_selector.dart';
+import '../selectors/category_selector_page.dart';
 
 class TransactionForm extends ConsumerStatefulWidget {
   final Transaction? transaction;
   final bool isEdit;
+  final TransactionType? initialType;
 
-  const TransactionForm({super.key, this.transaction, this.isEdit = false});
+  const TransactionForm({
+    super.key,
+    this.transaction,
+    this.isEdit = false,
+    this.initialType,
+  });
 
   @override
   ConsumerState<TransactionForm> createState() => _TransactionFormState();
@@ -29,13 +37,20 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
 
-  TransactionType _selectedType = TransactionType.expense;
+  late TransactionType _selectedType;
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategoryId;
 
   @override
   void initState() {
     super.initState();
+    // Usar initialType si está disponible, sino usar el tipo de la transacción o expense por defecto
+    _selectedType =
+        widget.initialType ??
+        (widget.isEdit && widget.transaction != null
+            ? widget.transaction!.type
+            : TransactionType.expense);
+
     if (widget.isEdit && widget.transaction != null) {
       _initializeFields();
     }
@@ -262,28 +277,80 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
         .where((cat) => cat.type == _selectedType)
         .toList();
 
-    return DropdownButtonFormField<String>(
-      value: _selectedCategoryId,
-      decoration: InputDecoration(
-        labelText: '${SimpleLocalization.getText(ref, 'category')} *',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+    Category? selectedCategory;
+    if (_selectedCategoryId != null) {
+      try {
+        selectedCategory = filteredCategories.firstWhere(
+          (cat) => cat.id == _selectedCategoryId,
+        );
+      } catch (e) {
+        selectedCategory = null;
+      }
+    }
+
+    final categoryColor = selectedCategory != null
+        ? Color(int.parse(selectedCategory.color.replaceFirst('#', '0xFF')))
+        : theme.colorScheme.outline;
+
+    return InkWell(
+      onTap: () async {
+        final result = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CategorySelectorPage(
+              categoryType: _selectedType,
+              selectedCategoryId: _selectedCategoryId,
+            ),
+          ),
+        );
+        if (result != null) {
+          setState(() {
+            _selectedCategoryId = result;
+          });
+        }
+      },
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: '${SimpleLocalization.getText(ref, 'category')} *',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+          ),
+        ),
+        child: Row(
+          children: [
+            if (selectedCategory != null) ...[
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: categoryColor,
+                  shape: BoxShape.circle,
+                ),
+                child: HugeIcon(
+                  icon: IconUtils.getIconFromString(selectedCategory.icon),
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  selectedCategory.name,
+                  style: theme.textTheme.bodyLarge,
+                ),
+              ),
+            ] else
+              Expanded(
+                child: Text(
+                  SimpleLocalization.getText(ref, 'selectCategory'),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
-      items: filteredCategories.map((category) {
-        return DropdownMenuItem(value: category.id, child: Text(category.name));
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedCategoryId = value;
-        });
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return SimpleLocalization.getText(ref, 'categoryRequired');
-        }
-        return null;
-      },
     );
   }
 

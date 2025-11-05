@@ -24,16 +24,27 @@ class DashboardScreen extends ConsumerWidget {
         .watch(filteredTransactionsProvider(const TransactionFilter()))
         .take(5)
         .toList();
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(SimpleLocalization.getText(ref, 'appTitle')),
+        title: Text(
+          SimpleLocalization.getText(ref, 'appTitle'),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        elevation: 0,
         actions: [
           IconButton(
             icon: HugeIcon(icon: HugeIconsStrokeRounded.refresh, size: 20),
             onPressed: () {
+              FeedbackService.buttonFeedback(ref);
               ref.read(transactionsProvider.notifier).refresh();
             },
+            tooltip: SimpleLocalization.getText(ref, 'refresh'),
           ),
         ],
       ),
@@ -42,7 +53,15 @@ class DashboardScreen extends ConsumerWidget {
           ref.read(transactionsProvider.notifier).refresh();
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.only(
+            left: AppConstants.defaultPadding,
+            right: AppConstants.defaultPadding,
+            top: AppConstants.defaultPadding,
+            bottom:
+                AppConstants.defaultPadding +
+                MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -68,8 +87,15 @@ class DashboardScreen extends ConsumerWidget {
               // Gráfico de transacciones
               const TransactionChart(),
 
+              // Separador
               const SizedBox(height: AppConstants.defaultPadding),
 
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: theme.colorScheme.outline.withOpacity(0.2),
+              ),
+              const SizedBox(height: AppConstants.defaultPadding),
               // Transacciones recientes
               RecentTransactions(transactions: recentTransactions),
             ],

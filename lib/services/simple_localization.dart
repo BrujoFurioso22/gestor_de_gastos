@@ -364,6 +364,7 @@ class SimpleLocalization {
     'categoryName': {'esp': 'Nombre de la categoría', 'eng': 'Category name'},
     'selectIcon': {'esp': 'Seleccionar icono', 'eng': 'Select icon'},
     'selectColor': {'esp': 'Seleccionar color', 'eng': 'Select color'},
+    'select': {'esp': 'Seleccionar', 'eng': 'Select'},
     'categoryType': {'esp': 'Tipo de categoría', 'eng': 'Category type'},
     'expense': {'esp': 'Gasto', 'eng': 'Expense'},
     'categoryCreated': {
@@ -697,5 +698,33 @@ class SimpleLocalization {
       'esp': 'Notificaciones que se muestran inmediatamente',
       'eng': 'Notifications that are shown immediately',
     },
+    'faq': {'esp': 'Preguntas Frecuentes', 'eng': 'Frequently Asked Questions'},
+    'faqDescription': {
+      'esp': 'Encuentra respuestas a preguntas comunes',
+      'eng': 'Find answers to common questions',
+    },
+    'support': {'esp': 'Soporte', 'eng': 'Support'},
+    'supportSubtitle': {
+      'esp': 'Estamos aquí para ayudarte',
+      'eng': 'We\'re here to help',
+    },
+    'contactSupport': {'esp': 'Contactar Soporte', 'eng': 'Contact Support'},
+    'contactSupportDescription': {
+      'esp': 'Envía un email o consulta información',
+      'eng': 'Send an email or get information',
+    },
+    'supportEmail': {'esp': 'Email de Soporte', 'eng': 'Support Email'},
+    'sendEmail': {'esp': 'Enviar Email', 'eng': 'Send Email'},
+    'emailCopied': {
+      'esp': 'Email copiado al portapapeles',
+      'eng': 'Email copied to clipboard',
+    },
+    'supportInfo': {
+      'esp': 'Información de Soporte',
+      'eng': 'Support Information',
+    },
+    'appInfo': {'esp': 'Información de la App', 'eng': 'App Information'},
+    'appVersion': {'esp': 'Versión', 'eng': 'Version'},
+    'platform': {'esp': 'Plataforma', 'eng': 'Platform'},
   };
 }

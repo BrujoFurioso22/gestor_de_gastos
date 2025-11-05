@@ -149,7 +149,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
       });
 
     return ListView.separated(
-      padding: const EdgeInsets.only(bottom: AppConstants.defaultPadding),
+      padding: EdgeInsets.only(
+        bottom: AppConstants.defaultPadding +
+            MediaQuery.of(context).padding.bottom,
+      ),
       itemCount: sortedDays.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {

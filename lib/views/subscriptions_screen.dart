@@ -201,7 +201,13 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
           }).toList();
 
     return ListView.builder(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.only(
+        left: AppConstants.defaultPadding,
+        right: AppConstants.defaultPadding,
+        top: AppConstants.defaultPadding,
+        bottom: AppConstants.defaultPadding +
+            MediaQuery.of(context).padding.bottom,
+      ),
       itemCount: filteredSubscriptions.length,
       itemBuilder: (context, index) {
         final subscription = filteredSubscriptions[index];

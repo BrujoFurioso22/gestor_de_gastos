@@ -91,7 +91,13 @@ class CategoriesScreen extends ConsumerWidget {
         .toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.only(
+        left: AppConstants.defaultPadding,
+        right: AppConstants.defaultPadding,
+        top: AppConstants.defaultPadding,
+        bottom:
+            AppConstants.defaultPadding + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -132,16 +138,29 @@ class CategoriesScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.primary,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
           ),
         ),
-        const SizedBox(height: AppConstants.smallPadding),
-        ...categories.map(
-          (category) => _buildCategoryCard(context, ref, category, theme),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.1,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            return _buildCategoryCard(context, ref, categories[index], theme);
+          },
         ),
       ],
     );
@@ -153,77 +172,60 @@ class CategoriesScreen extends ConsumerWidget {
     Category category,
     ThemeData theme,
   ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Color(
-            int.parse(category.color.replaceFirst('#', '0xFF')),
-          ),
-          child: HugeIcon(
-            icon: IconUtils.getIconFromString(category.icon),
-            size: 20,
-            color: Colors.white,
-          ),
+    final categoryColor = Color(
+      int.parse(category.color.replaceFirst('#', '0xFF')),
+    );
+
+    return InkWell(
+      onTap: () => _showEditCategoryDialog(context, ref, category),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: categoryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: categoryColor.withOpacity(0.3), width: 1),
         ),
-        title: Text(category.name),
-        subtitle: Text(
-          SimpleLocalization.getText(ref, category.type.name),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
-          ),
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) =>
-              _handleCategoryAction(context, ref, value, category),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  const HugeIcon(icon: HugeIconsStrokeRounded.edit01, size: 20),
-                  const SizedBox(width: 8),
-                  Text(SimpleLocalization.getText(ref, 'editCategory')),
-                ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: categoryColor,
+                shape: BoxShape.circle,
+              ),
+              child: HugeIcon(
+                icon: IconUtils.getIconFromString(category.icon),
+                size: 24,
+                color: Colors.white,
               ),
             ),
-            PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  const HugeIcon(
-                    icon: HugeIconsStrokeRounded.delete01,
-                    size: 20,
-                    color: Colors.red,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    SimpleLocalization.getText(ref, 'deleteCategory'),
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ],
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                category.name,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              SimpleLocalization.getText(ref, category.type.name),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 11,
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  void _handleCategoryAction(
-    BuildContext context,
-    WidgetRef ref,
-    String action,
-    Category category,
-  ) {
-    switch (action) {
-      case 'edit':
-        _showEditCategoryDialog(context, ref, category);
-        break;
-      case 'delete':
-        _showDeleteCategoryDialog(context, ref, category);
-        break;
-    }
   }
 
   void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
@@ -245,40 +247,6 @@ class CategoriesScreen extends ConsumerWidget {
       MaterialPageRoute(
         builder: (context) =>
             CategoryFormPage(category: category, isEdit: true),
-      ),
-    );
-  }
-
-  void _showDeleteCategoryDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Category category,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'deleteCategory')),
-        content: Text(SimpleLocalization.getText(ref, 'deleteCategoryConfirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              ref.read(categoriesProvider.notifier).deleteCategory(category.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    SimpleLocalization.getText(ref, 'categoryDeleted'),
-                  ),
-                ),
-              );
-            },
-            child: Text(SimpleLocalization.getText(ref, 'delete')),
-          ),
-        ],
       ),
     );
   }

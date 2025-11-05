@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
-import '../../constants/app_constants.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/app_config_provider.dart';
@@ -183,119 +182,122 @@ class _TransactionChartState extends ConsumerState<TransactionChart> {
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(transactionsProvider);
+    final theme = Theme.of(context);
 
-    return Card(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    HugeIcon(
-                      icon: HugeIconsStrokeRounded.analytics01,
-                      size: 24,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        SimpleLocalization.getText(
-                          ref,
-                          'distributionByCategory',
-                        ),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                // Botones para seleccionar período
-                SizedBox(
-                  height: 32,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildPeriodButton(
-                          context,
-                          ref,
-                          SimpleLocalization.getText(ref, 'day'),
-                          TimePeriod.daily,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildPeriodButton(
-                          context,
-                          ref,
-                          SimpleLocalization.getText(ref, 'week'),
-                          TimePeriod.weekly,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildPeriodButton(
-                          context,
-                          ref,
-                          SimpleLocalization.getText(ref, 'month'),
-                          TimePeriod.monthly,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildPeriodButton(
-                          context,
-                          ref,
-                          SimpleLocalization.getText(ref, 'year'),
-                          TimePeriod.yearly,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Botones para seleccionar tipo (Gastos/Ingresos)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizedBox(
-              height: 32,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildTypeButton(
-                      context,
-                      ref,
-                      SimpleLocalization.getText(ref, 'expenses'),
-                      TransactionType.expense,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildTypeButton(
-                      context,
-                      ref,
-                      SimpleLocalization.getText(ref, 'income'),
-                      TransactionType.income,
-                    ),
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header con título
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: HugeIcon(
+                icon: HugeIconsStrokeRounded.analytics01,
+                size: 20,
+                color: theme.colorScheme.primary,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 180,
-            child: _buildChartForPeriod(
-              context,
-              ref,
-              transactions,
-              _selectedPeriod,
-              _selectedType,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                SimpleLocalization.getText(ref, 'distributionByCategory'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
             ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Botones para seleccionar período
+        SizedBox(
+          height: 32,
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildPeriodButton(
+                  context,
+                  ref,
+                  SimpleLocalization.getText(ref, 'day'),
+                  TimePeriod.daily,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildPeriodButton(
+                  context,
+                  ref,
+                  SimpleLocalization.getText(ref, 'week'),
+                  TimePeriod.weekly,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildPeriodButton(
+                  context,
+                  ref,
+                  SimpleLocalization.getText(ref, 'month'),
+                  TimePeriod.monthly,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildPeriodButton(
+                  context,
+                  ref,
+                  SimpleLocalization.getText(ref, 'year'),
+                  TimePeriod.yearly,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        // Botones para seleccionar tipo (Gastos/Ingresos)
+        SizedBox(
+          height: 36,
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildTypeButton(
+                  context,
+                  ref,
+                  SimpleLocalization.getText(ref, 'expenses'),
+                  TransactionType.expense,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTypeButton(
+                  context,
+                  ref,
+                  SimpleLocalization.getText(ref, 'income'),
+                  TransactionType.income,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Gráfico
+        SizedBox(
+          height: 180,
+          child: _buildChartForPeriod(
+            context,
+            ref,
+            transactions,
+            _selectedPeriod,
+            _selectedType,
+          ),
+        ),
+        
+      ],
     );
   }
 
@@ -308,33 +310,30 @@ class _TransactionChartState extends ConsumerState<TransactionChart> {
     final isSelected = _selectedType == type;
     final theme = Theme.of(context);
 
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         setState(() {
           _selectedType = type;
         });
       },
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.primaryContainer
-              : theme.colorScheme.surfaceVariant,
+              ? theme.colorScheme.primaryContainer.withOpacity(0.6)
+              : theme.colorScheme.surfaceVariant.withOpacity(0.5),
           borderRadius: BorderRadius.circular(20),
-          border: isSelected
-              ? Border.all(color: theme.colorScheme.primary, width: 2)
-              : null,
         ),
         child: Text(
           label,
           style: TextStyle(
             color: isSelected
-                ? theme.colorScheme.onPrimaryContainer
+                ? theme.colorScheme.primary
                 : theme.colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
           ),
         ),
       ),
@@ -356,16 +355,17 @@ class _TransactionChartState extends ConsumerState<TransactionChart> {
           _selectedPeriod = period;
         });
       },
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         alignment: Alignment.center,
         decoration: isSelected
             ? BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  width: 1,
                 ),
               )
             : null,
@@ -375,7 +375,7 @@ class _TransactionChartState extends ConsumerState<TransactionChart> {
             color: isSelected
                 ? theme.colorScheme.primary
                 : theme.colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             fontSize: 12,
           ),
         ),

@@ -9,6 +9,8 @@ import '../providers/settings_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../services/simple_localization.dart';
+import '../utils/app_formatters.dart';
+import '../services/feedback_service.dart';
 
 class AccountSelector extends ConsumerWidget {
   const AccountSelector({super.key});
@@ -29,40 +31,66 @@ class AccountSelector extends ConsumerWidget {
       orElse: () => accounts.first,
     );
 
-    return Card(
-      child: InkWell(
-        onTap: () => _showAccountDialog(context, ref, accounts),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              HugeIcon(icon: HugeIconsStrokeRounded.money01, size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      SimpleLocalization.getText(ref, 'account'),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      currentAccount.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () => _showAccountDialog(context, ref, accounts),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+              : theme.colorScheme.surfaceVariant.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16),
-            ],
-          ),
+              child: HugeIcon(
+                icon: HugeIconsStrokeRounded.money01,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    SimpleLocalization.getText(ref, 'account'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    currentAccount.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );
@@ -73,77 +101,254 @@ class AccountSelector extends ConsumerWidget {
     WidgetRef ref,
     List<Account> accounts,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+              // Header
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      SimpleLocalization.getText(ref, 'accounts'),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: HugeIcon(
+                            icon: HugeIconsStrokeRounded.money01,
+                            size: 20,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          SimpleLocalization.getText(ref, 'accounts'),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _showAddAccountDialog(context, ref),
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      onPressed: () {
+                        FeedbackService.buttonFeedback(ref);
+                        Navigator.pop(context);
+                        _showAddAccountDialog(context, ref);
+                      },
                     ),
                   ],
                 ),
               ),
+              // Lista de cuentas
               Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: accounts.length,
-                  itemBuilder: (context, index) {
-                    final account = accounts[index];
-                    final isCurrent =
-                        account.id ==
-                        ref.read(appConfigProvider).currentAccountId;
+                child: accounts.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.account_circle_outlined,
+                              size: 64,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No hay cuentas',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: accounts.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final account = accounts[index];
+                          final isCurrent =
+                              account.id ==
+                              ref.read(appConfigProvider).currentAccountId;
 
-                    return ListTile(
-                      leading: Icon(
-                        isCurrent
-                            ? Icons.account_circle
-                            : Icons.account_circle_outlined,
-                        color: isCurrent
-                            ? Theme.of(context).primaryColor
-                            : null,
-                        size: 32,
+                          return _buildAccountCard(
+                            context,
+                            ref,
+                            account,
+                            isCurrent,
+                            theme,
+                            isDark,
+                          );
+                        },
                       ),
-                      title: Text(
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountCard(
+    BuildContext context,
+    WidgetRef ref,
+    Account account,
+    bool isCurrent,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    return InkWell(
+      onTap: () async {
+        FeedbackService.buttonFeedback(ref);
+        if (!isCurrent) {
+          await ref
+              .read(appConfigProvider.notifier)
+              .updateCurrentAccountId(account.id);
+          ref.read(transactionsProvider.notifier).refresh();
+          ref.read(subscriptionsProvider.notifier).refresh();
+        }
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isCurrent
+              ? theme.colorScheme.primaryContainer.withOpacity(0.5)
+              : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isCurrent
+                ? theme.colorScheme.primary.withOpacity(0.3)
+                : theme.colorScheme.outline.withOpacity(0.1),
+            width: isCurrent ? 2 : 1,
+          ),
+        ),
+        clipBehavior: Clip.none,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Nombre de la cuenta
+                    Expanded(
+                      child: Text(
                         account.name,
                         style: TextStyle(
+                          fontSize: 17,
                           fontWeight: isCurrent
                               ? FontWeight.bold
-                              : FontWeight.normal,
+                              : FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      subtitle: Text(
-                        '\$ ${account.initialBalance.toStringAsFixed(2)}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _showEditAccountDialog(context, ref, account);
-                            },
+                    ),
+                    // Botones de acción (más compactos)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: theme.colorScheme.primary,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () async {
+                          onPressed: () {
+                            FeedbackService.buttonFeedback(ref);
+                            Navigator.pop(context);
+                            _showEditAccountDialog(context, ref, account);
+                          },
+                          tooltip: SimpleLocalization.getText(ref, 'edit'),
+                          padding: const EdgeInsets.all(0),
+                          constraints: const BoxConstraints(
+                            minWidth: 25,
+                            minHeight: 25,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: theme.colorScheme.error,
+                          ),
+                          onPressed: () async {
+                            FeedbackService.buttonFeedback(ref);
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text(
+                                  SimpleLocalization.getText(ref, 'delete'),
+                                ),
+                                content: Text(
+                                  '¿${SimpleLocalization.getText(ref, 'delete')} la cuenta "${account.name}"?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: Text(
+                                      SimpleLocalization.getText(ref, 'cancel'),
+                                    ),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: theme.colorScheme.error,
+                                    ),
+                                    child: Text(
+                                      SimpleLocalization.getText(ref, 'delete'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
                               await ref
                                   .read(accountProvider.notifier)
                                   .deleteAccount(account.id);
@@ -159,30 +364,61 @@ class AccountSelector extends ConsumerWidget {
                                   ),
                                 );
                               }
-                            },
+                            }
+                          },
+                          tooltip: SimpleLocalization.getText(ref, 'delete'),
+                          padding: const EdgeInsets.all(0),
+                          constraints: const BoxConstraints(
+                            minWidth: 25,
+                            minHeight: 25,
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                // Balance
+                Text(
+                  '${SimpleLocalization.getText(ref, 'initialBalance')}: ${AppFormatters.formatCurrency(account.initialBalance, ref)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+            // Badge Activa con posición absoluta (abajo a la derecha)
+            if (isCurrent)
+              Positioned(
+                bottom: -10,
+                right: -13,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      bottomRight: Radius.circular(15),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
-                      onTap: () async {
-                        if (!isCurrent) {
-                          // Cambiar de cuenta
-                          await ref
-                              .read(appConfigProvider.notifier)
-                              .updateCurrentAccountId(account.id);
-                          // Recargar transacciones y suscripciones
-                          ref.read(transactionsProvider.notifier).refresh();
-                          ref.read(subscriptionsProvider.notifier).refresh();
-                        }
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      },
-                    );
-                  },
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

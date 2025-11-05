@@ -21,6 +21,8 @@ class MainNavigation extends ConsumerStatefulWidget {
 class _MainNavigationState extends ConsumerState<MainNavigation> {
   int _currentIndex = 0;
   BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+  bool _isInitializingAds = false;
 
   final List<Widget> _screens = [
     const DashboardScreen(),
@@ -38,11 +40,24 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
 
   /// Inicializa los anuncios
   Future<void> _initializeAds() async {
+    // Evitar múltiples llamadas simultáneas
+    if (_isBannerAdLoaded || _bannerAd != null) {
+      return;
+    }
+
     final adsEnabled = ref.read(adsEnabledProvider);
     if (adsEnabled) {
-      _bannerAd = await AdMobService.loadBannerAd();
-      if (mounted) {
-        setState(() {});
+      try {
+        final bannerAd = await AdMobService.loadBannerAd();
+        if (mounted && bannerAd != null) {
+          setState(() {
+            _bannerAd = bannerAd;
+            _isBannerAdLoaded = true;
+          });
+        }
+      } catch (e) {
+        // Silenciar errores de carga de anuncios
+        debugPrint('Error loading banner ad: $e');
       }
     }
   }
@@ -56,6 +71,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   @override
   void dispose() {
     _bannerAd?.dispose();
+    _bannerAd = null;
+    _isBannerAdLoaded = false;
     super.dispose();
   }
 
@@ -65,96 +82,110 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     final adsEnabled = ref.watch(adsEnabledProvider);
 
     // Actualizar anuncios cuando cambie el estado premium
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (adsEnabled && _bannerAd == null) {
-        _initializeAds();
-      } else if (!adsEnabled && _bannerAd != null) {
-        _bannerAd?.dispose();
-        _bannerAd = null;
-        setState(() {});
-      }
-    });
+    // Usar un flag para evitar múltiples llamadas
+    if (!_isInitializingAds) {
+      _isInitializingAds = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (adsEnabled && _bannerAd == null && !_isBannerAdLoaded) {
+          _initializeAds().then((_) {
+            _isInitializingAds = false;
+          });
+        } else if (!adsEnabled && _bannerAd != null) {
+          _bannerAd?.dispose();
+          _bannerAd = null;
+          _isBannerAdLoaded = false;
+          _isInitializingAds = false;
+          setState(() {});
+        } else {
+          _isInitializingAds = false;
+        }
+      });
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Banner ad
-          if (_bannerAd != null)
-            Container(
-              height: 50,
-              width: double.infinity,
-              child: AdWidget(ad: _bannerAd!),
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Banner ad - Solo mostrar si está cargado
+            if (_bannerAd != null && _isBannerAdLoaded)
+              Container(
+                height: 50,
+                width: double.infinity,
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            // Bottom navigation bar
+            BottomNavigationBar(
+              type: BottomNavigationBarType.fixed,
+              currentIndex: _currentIndex,
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant,
+              selectedLabelStyle: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+              ),
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              items: [
+                BottomNavigationBarItem(
+                  icon: _buildNavIcon(
+                    HugeIconsStrokeRounded.home01,
+                    isSelected: _currentIndex == 0,
+                  ),
+                  activeIcon: _buildNavIcon(
+                    HugeIconsStrokeRounded.home01,
+                    isSelected: true,
+                  ),
+                  label: SimpleLocalization.getText(ref, 'dashboard'),
+                ),
+                BottomNavigationBarItem(
+                  icon: _buildNavIcon(
+                    HugeIconsStrokeRounded.clock01,
+                    isSelected: _currentIndex == 1,
+                  ),
+                  activeIcon: _buildNavIcon(
+                    HugeIconsStrokeRounded.clock01,
+                    isSelected: true,
+                  ),
+                  label: SimpleLocalization.getText(ref, 'history'),
+                ),
+                BottomNavigationBarItem(
+                  icon: _buildNavIcon(
+                    HugeIconsStrokeRounded.money01,
+                    isSelected: _currentIndex == 2,
+                  ),
+                  activeIcon: _buildNavIcon(
+                    HugeIconsStrokeRounded.money01,
+                    isSelected: true,
+                  ),
+                  label: SimpleLocalization.getText(ref, 'subscriptions'),
+                ),
+                BottomNavigationBarItem(
+                  icon: _buildNavIcon(
+                    HugeIconsStrokeRounded.menu01,
+                    isSelected: _currentIndex == 3,
+                  ),
+                  activeIcon: _buildNavIcon(
+                    HugeIconsStrokeRounded.menu01,
+                    isSelected: true,
+                  ),
+                  label: SimpleLocalization.getText(ref, 'settings'),
+                ),
+              ],
             ),
-          // Bottom navigation bar
-          BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _currentIndex,
-            selectedItemColor: Theme.of(context).colorScheme.primary,
-            unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-            selectedLabelStyle: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontWeight: FontWeight.w400,
-              fontSize: 12,
-            ),
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            items: [
-              BottomNavigationBarItem(
-                icon: _buildNavIcon(
-                  HugeIconsStrokeRounded.home01,
-                  isSelected: _currentIndex == 0,
-                ),
-                activeIcon: _buildNavIcon(
-                  HugeIconsStrokeRounded.home01,
-                  isSelected: true,
-                ),
-                label: SimpleLocalization.getText(ref, 'dashboard'),
-              ),
-              BottomNavigationBarItem(
-                icon: _buildNavIcon(
-                  HugeIconsStrokeRounded.clock01,
-                  isSelected: _currentIndex == 1,
-                ),
-                activeIcon: _buildNavIcon(
-                  HugeIconsStrokeRounded.clock01,
-                  isSelected: true,
-                ),
-                label: SimpleLocalization.getText(ref, 'history'),
-              ),
-              BottomNavigationBarItem(
-                icon: _buildNavIcon(
-                  HugeIconsStrokeRounded.money01,
-                  isSelected: _currentIndex == 2,
-                ),
-                activeIcon: _buildNavIcon(
-                  HugeIconsStrokeRounded.money01,
-                  isSelected: true,
-                ),
-                label: SimpleLocalization.getText(ref, 'subscriptions'),
-              ),
-              BottomNavigationBarItem(
-                icon: _buildNavIcon(
-                  HugeIconsStrokeRounded.menu01,
-                  isSelected: _currentIndex == 3,
-                ),
-                activeIcon: _buildNavIcon(
-                  HugeIconsStrokeRounded.menu01,
-                  isSelected: true,
-                ),
-                label: SimpleLocalization.getText(ref, 'settings'),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

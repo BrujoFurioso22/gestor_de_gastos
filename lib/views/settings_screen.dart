@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
@@ -100,7 +101,13 @@ class SettingsScreen extends ConsumerWidget {
     bool isPremium,
   ) {
     return ListView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.only(
+        left: AppConstants.defaultPadding,
+        right: AppConstants.defaultPadding,
+        top: AppConstants.defaultPadding,
+        bottom:
+            AppConstants.defaultPadding + MediaQuery.of(context).padding.bottom,
+      ),
       children: [
         // Sección Financiera
         _buildSection(
@@ -347,17 +354,44 @@ class SettingsScreen extends ConsumerWidget {
               HugeIconsStrokeRounded.star,
               () => _showPremiumDialog(context, ref),
             ),
-            // Toggle para pruebas - Cambiar entre premium y no premium
-            _buildSwitchTile(
-              context,
-              ref,
-              SimpleLocalization.getText(ref, 'premiumModeTesting'),
-              isPremium,
-              HugeIconsStrokeRounded.star,
-              (value) => ref.read(settingsProvider.notifier).setPremium(value),
-            ),
           ],
         ),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
+        // Sección de FAQ
+        _buildSection(context, SimpleLocalization.getText(ref, 'faq'), [
+          _buildListTile(
+            context,
+            ref,
+            SimpleLocalization.getText(ref, 'faq'),
+            SimpleLocalization.getText(ref, 'faqDescription'),
+            HugeIconsStrokeRounded.helpCircle,
+            () => _showFaqDialog(context, ref),
+          ),
+        ]),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
+        // Sección de Soporte
+        _buildSection(context, SimpleLocalization.getText(ref, 'support'), [
+          _buildListTile(
+            context,
+            ref,
+            SimpleLocalization.getText(ref, 'contactSupport'),
+            SimpleLocalization.getText(ref, 'contactSupportDescription'),
+            HugeIconsStrokeRounded.mail01,
+            () => _showSupportDialog(context, ref),
+          ),
+          _buildListTile(
+            context,
+            ref,
+            SimpleLocalization.getText(ref, 'appVersion'),
+            AppConstants.appVersion,
+            HugeIconsStrokeRounded.helpCircle,
+            () {},
+          ),
+        ]),
 
         const SizedBox(height: AppConstants.largePadding),
 
@@ -724,59 +758,126 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildPremiumPurchaseOptions(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<ProductDetailsResponse>(
-      future: ref.read(premiumServiceProvider).getProducts(),
-      builder: (context, snapshot) {
-        final loading = !snapshot.hasData;
-        final products = snapshot.data?.productDetails ?? [];
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return FutureBuilder<ProductDetailsResponse>(
+          future: ref.read(premiumServiceProvider).getProducts(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              // Mostrar error si hay alguno
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error al cargar productos: ${snapshot.error}',
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Verifica que las suscripciones estén activas en Play Console',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            }
 
-        String priceFor(String id, String fallback) {
-          final found = products.where((p) => p.id == id).toList();
-          return found.isNotEmpty ? found.first.price : fallback;
-        }
+            final loading = !snapshot.hasData;
+            final response = snapshot.data;
+            final products = response?.productDetails ?? [];
+            final notFoundIds = response?.notFoundIDs ?? [];
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              SimpleLocalization.getText(ref, 'selectPlan'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            if (loading) const Center(child: CircularProgressIndicator()),
-            if (!loading) ...[
-              _buildPurchaseOption(
-                context: context,
-                ref: ref,
-                title: SimpleLocalization.getText(ref, 'monthly'),
-                price: priceFor(PremiumProducts.monthlyPlan, '\u2014'),
-                isBestValue: false,
-                onTap: () => _processPurchase(context, ref, 'monthly'),
-              ),
-              const SizedBox(height: 12),
-              _buildPurchaseOption(
-                context: context,
-                ref: ref,
-                title: SimpleLocalization.getText(ref, 'yearly'),
-                price: priceFor(PremiumProducts.yearlyPlan, '\u2014'),
-                isBestValue: true,
-                onTap: () => _processPurchase(context, ref, 'yearly'),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            String priceFor(String id, String fallback) {
+              final found = products.where((p) => p.id == id).toList();
+              return found.isNotEmpty ? found.first.price : fallback;
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  SimpleLocalization.getText(ref, 'selectPlan'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text('• ${SimpleLocalization.getText(ref, 'noAds')}'),
-              Text('• ${SimpleLocalization.getText(ref, 'prioritySupport')}'),
-              Text('• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}'),
-            ],
-          ],
+                const SizedBox(height: 16),
+                if (loading) const Center(child: CircularProgressIndicator()),
+                if (!loading && products.isEmpty) ...[
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No se encontraron productos',
+                    style: TextStyle(color: Colors.orange),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  if (notFoundIds.isNotEmpty)
+                    Text(
+                      'IDs no encontrados: ${notFoundIds.join(", ")}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Asegúrate de que las suscripciones estén activas y publicadas en Play Console',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                if (!loading && products.isNotEmpty) ...[
+                  _buildPurchaseOption(
+                    context: context,
+                    ref: ref,
+                    title: SimpleLocalization.getText(ref, 'monthly'),
+                    price: priceFor(PremiumProducts.monthlyPlan, '\u2014'),
+                    isBestValue: false,
+                    onTap: () => _processPurchase(context, ref, 'monthly'),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPurchaseOption(
+                    context: context,
+                    ref: ref,
+                    title: SimpleLocalization.getText(ref, 'yearly'),
+                    price: priceFor(PremiumProducts.yearlyPlan, '\u2014'),
+                    isBestValue: true,
+                    onTap: () => _processPurchase(context, ref, 'yearly'),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('• ${SimpleLocalization.getText(ref, 'noAds')}'),
+                  Text(
+                    '• ${SimpleLocalization.getText(ref, 'prioritySupport')}',
+                  ),
+                  Text(
+                    '• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}',
+                  ),
+                ],
+              ],
+            );
+          },
         );
       },
     );
@@ -1181,6 +1282,565 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showFaqDialog(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isEnglish = ref.read(appConfigProvider).language == 'en';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    HugeIcon(
+                      icon: HugeIconsStrokeRounded.helpCircle,
+                      size: 24,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        SimpleLocalization.getText(ref, 'faq'),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'How do I add a transaction?'
+                            : '¿Cómo agrego una transacción?',
+                        isEnglish
+                            ? 'Tap the + button on the dashboard screen to add a new transaction. Select the type (income or expense), enter the amount, choose a category, and save.'
+                            : 'Toca el botón + en la pantalla de inicio para agregar una nueva transacción. Selecciona el tipo (ingreso o gasto), ingresa el monto, elige una categoría y guarda.',
+                      ),
+                      const SizedBox(height: 5),
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'How do I manage categories?'
+                            : '¿Cómo gestiono las categorías?',
+                        isEnglish
+                            ? 'Go to Settings > Management > Manage Categories. You can create, edit, and delete custom categories. Default categories can be restored at any time.'
+                            : 'Ve a Configuración > Gestión > Gestionar Categorías. Puedes crear, editar y eliminar categorías personalizadas. Las categorías por defecto se pueden restaurar en cualquier momento.',
+                      ),
+                      const SizedBox(height: 5),
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'How do subscriptions work?'
+                            : '¿Cómo funcionan las suscripciones?',
+                        isEnglish
+                            ? 'Subscriptions allow you to track recurring payments. Set the frequency, amount, and next payment date. You\'ll receive reminders before the payment is due.'
+                            : 'Las suscripciones te permiten rastrear pagos recurrentes. Establece la frecuencia, el monto y la fecha del próximo pago. Recibirás recordatorios antes de que venza el pago.',
+                      ),
+                      const SizedBox(height: 5),
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'What is the premium version?'
+                            : '¿Qué es la versión premium?',
+                        isEnglish
+                            ? 'The premium version removes ads, provides priority support, and allows unlimited accounts. You can purchase it monthly or annually with a discount.'
+                            : 'La versión premium elimina los anuncios, proporciona soporte prioritario y permite cuentas ilimitadas. Puedes comprarla mensualmente o anualmente con descuento.',
+                      ),
+
+                      const SizedBox(height: 5),
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'How do I set a monthly expense limit?'
+                            : '¿Cómo establezco un límite de gastos mensual?',
+                        isEnglish
+                            ? 'Go to Settings > Financial Settings > Monthly Expense Limit. Enter your desired limit, and the app will track your spending against it.'
+                            : 'Ve a Configuración > Configuración Financiera > Límite de Gastos Mensual. Ingresa tu límite deseado y la app rastreará tus gastos comparándolos con él.',
+                      ),
+                      const SizedBox(height: 5),
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'Can I use multiple accounts?'
+                            : '¿Puedo usar múltiples cuentas?',
+                        isEnglish
+                            ? 'Yes! You can create and switch between multiple accounts. Each account has its own transactions, subscriptions, and balance. Premium users can have unlimited accounts.'
+                            : '¡Sí! Puedes crear y cambiar entre múltiples cuentas. Cada cuenta tiene sus propias transacciones, suscripciones y balance. Los usuarios premium pueden tener cuentas ilimitadas.',
+                      ),
+                      const SizedBox(height: 5),
+                      _buildFaqItem(
+                        context,
+                        ref,
+                        isEnglish
+                            ? 'How do notifications work?'
+                            : '¿Cómo funcionan las notificaciones?',
+                        isEnglish
+                            ? 'Enable notifications in Settings > Notifications. You\'ll receive reminders for subscription payments before they\'re due. You can configure how many days in advance you want to be notified.'
+                            : 'Habilita las notificaciones en Configuración > Notificaciones. Recibirás recordatorios para los pagos de suscripciones antes de que venzan. Puedes configurar con cuántos días de anticipación quieres ser notificado.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFaqItem(
+    BuildContext context,
+    WidgetRef ref,
+    String question,
+    String answer,
+  ) {
+    final theme = Theme.of(context);
+    return Card(
+      child: ExpansionTile(
+        title: Text(
+          question,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              answer,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isEnglish = ref.read(appConfigProvider).language == 'en';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        ),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+            maxWidth: 500,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header mejorado con gradiente
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(AppConstants.borderRadius),
+                    topRight: Radius.circular(AppConstants.borderRadius),
+                  ),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: HugeIcon(
+                        icon: HugeIconsStrokeRounded.mail01,
+                        size: 28,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            SimpleLocalization.getText(ref, 'support'),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            SimpleLocalization.getText(ref, 'supportSubtitle'),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Email de soporte - Tarjeta mejorada
+                      Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer.withOpacity(
+                            0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            width: 1.5,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: HugeIcon(
+                                icon: HugeIconsStrokeRounded.mail01,
+                                size: 24,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    SimpleLocalization.getText(
+                                      ref,
+                                      'supportEmail',
+                                    ),
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'soporte@cuidatuplata.com',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.copy,
+                                color: theme.colorScheme.primary,
+                              ),
+                              onPressed: () async {
+                                await Clipboard.setData(
+                                  const ClipboardData(
+                                    text: 'soporte@cuidatuplata.com',
+                                  ),
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        SimpleLocalization.getText(
+                                          ref,
+                                          'emailCopied',
+                                        ),
+                                      ),
+                                      backgroundColor:
+                                          theme.colorScheme.primary,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Botón para enviar email mejorado
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.primary.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              final email = 'soporte@cuidatuplata.com';
+                              final subject = isEnglish
+                                  ? 'Support Request - CuidaTuPlata'
+                                  : 'Solicitud de Soporte - CuidaTuPlata';
+                              final body = isEnglish
+                                  ? 'Hello,\n\nI need help with:\n\n\n\nApp Version: ${AppConstants.appVersion}'
+                                  : 'Hola,\n\nNecesito ayuda con:\n\n\n\nVersión de la App: ${AppConstants.appVersion}';
+
+                              await Clipboard.setData(
+                                ClipboardData(
+                                  text:
+                                      'Email: $email\nSubject: $subject\n\n$body',
+                                ),
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isEnglish
+                                          ? 'Email information copied. Please paste it in your email client.'
+                                          : 'Información del email copiada. Por favor pégalo en tu cliente de email.',
+                                    ),
+                                    duration: const Duration(seconds: 3),
+                                    backgroundColor: theme.colorScheme.primary,
+                                  ),
+                                );
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.borderRadius,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  HugeIcon(
+                                    icon: HugeIconsStrokeRounded.mail01,
+                                    size: 20,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    SimpleLocalization.getText(
+                                      ref,
+                                      'sendEmail',
+                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Información de respuesta
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceVariant.withOpacity(
+                            0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.1,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: HugeIcon(
+                                icon: HugeIconsStrokeRounded.clock01,
+                                size: 20,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    SimpleLocalization.getText(
+                                      ref,
+                                      'supportInfo',
+                                    ),
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    isEnglish
+                                        ? 'We typically respond within 24-48 hours. For urgent matters, please mention "URGENT" in the subject line.'
+                                        : 'Normalmente respondemos en 24-48 horas. Para asuntos urgentes, por favor menciona "URGENTE" en el asunto.',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Información de la app mejorada
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                HugeIcon(
+                                  icon: HugeIconsStrokeRounded.helpCircle,
+                                  size: 20,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  SimpleLocalization.getText(ref, 'appInfo'),
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildInfoRow(
+                              theme,
+                              SimpleLocalization.getText(ref, 'appName'),
+                              AppConstants.appVersion,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildInfoRow(
+                              theme,
+                              SimpleLocalization.getText(ref, 'platform'),
+                              Theme.of(
+                                context,
+                              ).platform.toString().split('.').last,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 }

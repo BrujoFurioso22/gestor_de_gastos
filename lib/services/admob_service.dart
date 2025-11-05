@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../constants/app_constants.dart';
 import 'hive_service.dart';
@@ -13,28 +15,13 @@ class AdMobService {
     _isInitialized = true;
   }
 
-  /// Crea un banner ad
-  static BannerAd createBannerAd() {
-    return BannerAd(
-      adUnitId: AppConstants.adMobBannerId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-        },
-        onAdOpened: (ad) {
-        },
-        onAdClosed: (ad) {
-        },
-      ),
-    );
-  }
-
   /// Carga un banner ad
   static Future<BannerAd?> loadBannerAd() async {
+    // Si ya hay un banner cargado, no crear uno nuevo
+    if (_bannerAd != null) {
+      return _bannerAd;
+    }
+
     if (!_isInitialized) {
       await init();
     }
@@ -46,10 +33,62 @@ class AdMobService {
     }
 
     try {
-      _bannerAd = createBannerAd();
-      await _bannerAd!.load();
-      return _bannerAd;
+      final completer = Completer<BannerAd?>();
+
+      final newBanner = BannerAd(
+        adUnitId: AppConstants.adMobBannerId,
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            // El anuncio se cargó correctamente
+            if (!completer.isCompleted) {
+              completer.complete(ad as BannerAd);
+            }
+          },
+          onAdFailedToLoad: (ad, error) {
+            // El anuncio falló al cargar
+            debugPrint('Banner ad failed to load: ${error.message}');
+            ad.dispose();
+            if (!completer.isCompleted) {
+              completer.complete(null);
+            }
+          },
+          onAdOpened: (ad) {},
+          onAdClosed: (ad) {},
+        ),
+      );
+
+      // Iniciar la carga del anuncio
+      newBanner.load();
+
+      // Esperar a que el anuncio se cargue con timeout de 10 segundos
+      final loadedAd = await completer.future
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('Banner ad load timeout');
+              newBanner.dispose();
+              return null;
+            },
+          )
+          .catchError((error) {
+            debugPrint('Banner ad load error: $error');
+            newBanner.dispose();
+            return null;
+          });
+
+      if (loadedAd != null) {
+        _bannerAd = loadedAd;
+        return _bannerAd;
+      }
+
+      newBanner.dispose();
+      return null;
     } catch (e) {
+      debugPrint('Banner ad exception: $e');
+      _bannerAd?.dispose();
+      _bannerAd = null;
       return null;
     }
   }
@@ -82,20 +121,17 @@ class AdMobService {
             _interstitialAd = ad;
             _showInterstitialAd();
           },
-          onAdFailedToLoad: (error) {
-          },
+          onAdFailedToLoad: (error) {},
         ),
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   /// Muestra un anuncio interstitial
   static void _showInterstitialAd() {
     if (_interstitialAd != null) {
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdShowedFullScreenContent: (ad) {
-        },
+        onAdShowedFullScreenContent: (ad) {},
         onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
           _interstitialAd = null;
