@@ -880,25 +880,12 @@ class SettingsScreen extends ConsumerWidget {
         content: isPremium
             ? _buildPremiumActiveContent(context, ref)
             : _buildPremiumPurchaseOptions(context, ref),
-        actions: isPremium
-            ? [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(SimpleLocalization.getText(ref, 'close')),
-                ),
-              ]
-            : [
-                TextButton(
-                  onPressed: () async {
-                    await ref.read(premiumServiceProvider).restorePurchases();
-                  },
-                  child: Text(SimpleLocalization.getText(ref, 'restore')),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(SimpleLocalization.getText(ref, 'close')),
-                ),
-              ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'close')),
+          ),
+        ],
       ),
     );
   }
@@ -2171,7 +2158,6 @@ class SettingsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                           
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
