@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-import '../providers/app_config_provider.dart';
+import '../services/simple_localization.dart';
 
 part 'subscription.g.dart';
 
@@ -287,19 +287,17 @@ extension SubscriptionFrequencyExtension on SubscriptionFrequency {
   }
 
   String getTranslatedShortName(WidgetRef ref) {
-    final isEnglish = ref.read(appConfigProvider).language == 'en';
-
     switch (this) {
       case SubscriptionFrequency.daily:
-        return isEnglish ? 'Day' : 'Día';
+        return SimpleLocalization.getText(ref, 'frequencyShortDay');
       case SubscriptionFrequency.weekly:
-        return isEnglish ? 'Week' : 'Sem';
+        return SimpleLocalization.getText(ref, 'frequencyShortWeek');
       case SubscriptionFrequency.monthly:
-        return isEnglish ? 'Month' : 'Mes';
+        return SimpleLocalization.getText(ref, 'frequencyShortMonth');
       case SubscriptionFrequency.quarterly:
-        return isEnglish ? 'Qtr' : 'Trim';
+        return SimpleLocalization.getText(ref, 'frequencyShortQuarter');
       case SubscriptionFrequency.yearly:
-        return isEnglish ? 'Year' : 'Año';
+        return SimpleLocalization.getText(ref, 'frequencyShortYear');
     }
   }
 }

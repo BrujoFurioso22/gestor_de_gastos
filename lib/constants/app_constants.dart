@@ -22,6 +22,7 @@ class AppConstants {
   static const String categoriesBoxName = 'categories';
   static const String settingsBoxName = 'settings';
   static const String subscriptionsBoxName = 'subscriptions';
+  static const String recurringPaymentsBoxName = 'recurring_payments';
   static const String appConfigBoxName = 'app_config';
 
   // Configuración de moneda

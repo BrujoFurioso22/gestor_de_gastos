@@ -12,7 +12,7 @@ import '../../services/feedback_service.dart';
 import '../../services/simple_localization.dart';
 import '../../utils/app_formatters.dart';
 import '../../utils/icon_utils.dart';
-import '../inputs/modern_toggle_selector.dart';
+import '../inputs/transaction_type_selector.dart';
 import '../selectors/category_selector_page.dart';
 
 class TransactionForm extends ConsumerStatefulWidget {
@@ -248,22 +248,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   }
 
   Widget _buildTypeSelector(ThemeData theme) {
-    return ModernToggleSelector<TransactionType>(
+    return TransactionTypeSelector(
       value: _selectedType,
-      options: [
-        ToggleOption(
-          value: TransactionType.income,
-          label: SimpleLocalization.getText(ref, 'income'),
-          icon: HugeIconsStrokeRounded.arrowUp01,
-          color: theme.colorScheme.primary,
-        ),
-        ToggleOption(
-          value: TransactionType.expense,
-          label: SimpleLocalization.getText(ref, 'expense'),
-          icon: HugeIconsStrokeRounded.arrowDown01,
-          color: theme.colorScheme.error,
-        ),
-      ],
       onChanged: (type) {
         setState(() {
           _selectedType = type;

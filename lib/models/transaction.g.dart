@@ -26,7 +26,7 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       notes: fields[6] as String?,
       createdAt: fields[7] as DateTime?,
       updatedAt: fields[8] as DateTime?,
-      accountId: fields.containsKey(9) ? fields[9] as String? : null,
+      accountId: fields[9] as String?,
     );
   }
 

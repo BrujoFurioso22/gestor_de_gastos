@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
+import '../models/recurring_payment.dart';
 import 'notification_service.dart';
 import '../services/hive_service.dart';
 
@@ -181,5 +182,131 @@ class TimerService {
     );
 
     await scheduleSubscriptionReminder(subscription, reminderDate);
+  }
+
+  // ========== MÉTODOS PARA PAGOS RECURRENTES ==========
+
+  /// Programa un recordatorio para un pago recurrente (se ejecuta cuando se cumple la fecha)
+  static Future<void> scheduleRecurringPaymentReminder(
+    RecurringPayment payment,
+    DateTime paymentDate, {
+    Future<void> Function(RecurringPayment)? onPaymentDue,
+  }) async {
+    // Verificar si las notificaciones están habilitadas
+    if (!_areNotificationsEnabled()) {
+      debugPrint(
+        '🔕 Notificaciones deshabilitadas, no se programa el recordatorio',
+      );
+      return;
+    }
+
+    final paymentId = payment.id;
+
+    // Cancelar timer existente si existe
+    _cancelExistingTimer('recurring_$paymentId');
+
+    final now = DateTime.now();
+    final delay = paymentDate.difference(now);
+
+    if (delay.isNegative) {
+      debugPrint(
+        '⚠️ La fecha ya pasó para ${payment.name}, procesando pago inmediato',
+      );
+      // Si la fecha ya pasó, ejecutar callback inmediatamente
+      if (onPaymentDue != null) {
+        await onPaymentDue(payment);
+      }
+      return;
+    }
+
+    debugPrint(
+      '⏰ Programando pago automático para ${payment.name} en ${delay.inSeconds} segundos',
+    );
+
+    // Crear y guardar el timer
+    final timer = Timer(delay, () async {
+      // Verificar nuevamente antes de procesar
+      if (!_areNotificationsEnabled()) {
+        debugPrint('🔕 Notificaciones deshabilitadas, cancelando pago automático');
+        return;
+      }
+
+      debugPrint(
+        '🔔 Ejecutando pago automático programado para ${payment.name}',
+      );
+      
+      // Ejecutar callback para procesar el pago (crear transacción, etc.)
+      if (onPaymentDue != null) {
+        await onPaymentDue(payment);
+      }
+
+      // Limpiar el timer después de ejecutarse
+      _activeTimers.remove('recurring_$paymentId');
+      _scheduledTimes.remove('recurring_$paymentId');
+    });
+
+    _activeTimers['recurring_$paymentId'] = timer;
+    _scheduledTimes['recurring_$paymentId'] = paymentDate;
+
+    debugPrint(
+      '✅ Pago automático programado con Timer para: ${payment.name}',
+    );
+  }
+
+  /// Programa recordatorios para todos los pagos recurrentes activos
+  static Future<void> scheduleAllRecurringPaymentReminders(
+    List<RecurringPayment> payments, {
+    Future<void> Function(RecurringPayment)? onPaymentDue,
+  }) async {
+    // Verificar si las notificaciones están habilitadas antes de programar
+    if (!_areNotificationsEnabled()) {
+      debugPrint(
+        '🔕 Notificaciones deshabilitadas, no se programan pagos automáticos',
+      );
+      return;
+    }
+
+    debugPrint(
+      '🔄 Programando pagos automáticos para ${payments.length} pagos recurrentes',
+    );
+
+    for (final payment in payments) {
+      if (payment.isActive) {
+        // Programar para la fecha de pago (no días antes, sino el día exacto)
+        await scheduleRecurringPaymentReminder(
+          payment,
+          payment.nextPaymentDate,
+          onPaymentDue: onPaymentDue,
+        );
+      }
+    }
+
+    debugPrint('✅ Todos los pagos automáticos programados');
+  }
+
+  /// Cancela un recordatorio específico de pago recurrente
+  static void cancelRecurringPaymentReminder(String paymentId) {
+    _cancelExistingTimer('recurring_$paymentId');
+    debugPrint('❌ Pago automático cancelado para: $paymentId');
+  }
+
+  /// Cancela todos los recordatorios de pagos recurrentes
+  static void cancelAllRecurringPaymentReminders() {
+    debugPrint('🔄 Cancelando todos los pagos automáticos...');
+
+    final keysToRemove = <String>[];
+    for (final key in _activeTimers.keys) {
+      if (key.startsWith('recurring_')) {
+        _activeTimers[key]?.cancel();
+        keysToRemove.add(key);
+      }
+    }
+
+    for (final key in keysToRemove) {
+      _activeTimers.remove(key);
+      _scheduledTimes.remove(key);
+    }
+
+    debugPrint('✅ Todos los pagos automáticos cancelados');
   }
 }

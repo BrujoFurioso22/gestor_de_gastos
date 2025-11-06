@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'simple_localization.dart';
 import '../services/hive_service.dart';
+import '../models/transaction.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -105,6 +106,49 @@ class NotificationService {
       body: '$subscriptionName ${_getTranslatedText('subscriptionDueSoon')}',
       payload: 'subscription_$subscriptionId',
     );
+  }
+
+  /// Muestra una notificación cuando se procesa un pago recurrente automáticamente
+  static Future<void> showRecurringPaymentProcessed({
+    required String paymentName,
+    required double paymentAmount,
+    required TransactionType paymentType,
+    required String paymentId,
+  }) async {
+    final typeText = paymentType == TransactionType.income
+        ? _getTranslatedText('incomeType')
+        : _getTranslatedText('expenseType');
+
+    final amountText = _formatCurrency(paymentAmount);
+
+    await showImmediateNotification(
+      title: _getTranslatedText('paymentProcessed'),
+      body: '$typeText: $paymentName - $amountText',
+      payload: 'recurring_payment_$paymentId',
+    );
+  }
+
+  /// Formatea el monto como moneda
+  static String _formatCurrency(double amount) {
+    final appConfig = HiveService.getAppConfig();
+    final currency = appConfig.currency;
+
+    switch (currency) {
+      case 'USD':
+        return '\$${amount.toStringAsFixed(2)}';
+      case 'EUR':
+        return '€${amount.toStringAsFixed(2)}';
+      case 'MXN':
+        return '\$${amount.toStringAsFixed(2)}';
+      case 'GBP':
+        return '£${amount.toStringAsFixed(2)}';
+      case 'CAD':
+        return '\$${amount.toStringAsFixed(2)}';
+      case 'AUD':
+        return '\$${amount.toStringAsFixed(2)}';
+      default:
+        return '€${amount.toStringAsFixed(2)}';
+    }
   }
 
   /// Obtiene el estado de los permisos

@@ -31,7 +31,7 @@ class SubscriptionAdapter extends TypeAdapter<Subscription> {
       createdAt: fields[11] as DateTime?,
       updatedAt: fields[12] as DateTime?,
       nextPaymentDate: fields[13] as DateTime?,
-      accountId: fields.containsKey(14) ? fields[14] as String? : null,
+      accountId: fields[14] as String?,
     );
   }
 

@@ -8,7 +8,7 @@ import '../../providers/category_provider.dart';
 import '../../services/simple_localization.dart';
 import '../../constants/app_constants.dart';
 import '../../utils/icon_utils.dart';
-import '../inputs/modern_toggle_selector.dart';
+import '../inputs/transaction_type_selector.dart';
 import '../selectors/icon_selector_page.dart';
 import '../selectors/color_selector_page.dart';
 
@@ -317,21 +317,7 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
               _isDefaultCategory, // Deshabilitar para categorías por defecto
           child: Opacity(
             opacity: _isDefaultCategory ? 0.5 : 1.0,
-            child: ModernToggleSelector<TransactionType>(
-              options: [
-                ToggleOption(
-                  value: TransactionType.expense,
-                  label: SimpleLocalization.getText(ref, 'expense'),
-                  color: theme.colorScheme.error,
-                  icon: HugeIconsStrokeRounded.arrowDown01,
-                ),
-                ToggleOption(
-                  value: TransactionType.income,
-                  label: SimpleLocalization.getText(ref, 'income'),
-                  color: theme.colorScheme.primary,
-                  icon: HugeIconsStrokeRounded.arrowUp01,
-                ),
-              ],
+            child: TransactionTypeSelector(
               value: _selectedType,
               onChanged: (value) {
                 setState(() {

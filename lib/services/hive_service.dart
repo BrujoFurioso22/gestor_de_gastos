@@ -3,6 +3,7 @@ import '../models/transaction.dart';
 import '../models/category.dart';
 import '../models/app_settings.dart';
 import '../models/subscription.dart';
+import '../models/recurring_payment.dart';
 import '../models/app_config.dart';
 import '../models/account.dart';
 import '../constants/app_constants.dart';
@@ -12,6 +13,7 @@ class HiveService {
   static late Box<Category> _categoriesBox;
   static late Box<AppSettings> _settingsBox;
   static late Box<Subscription> _subscriptionsBox;
+  static late Box<RecurringPayment> _recurringPaymentsBox;
   static late Box<AppConfig> _appConfigBox;
   static late Box<Account> _accountsBox;
 
@@ -26,6 +28,8 @@ class HiveService {
     Hive.registerAdapter(AppSettingsAdapter());
     Hive.registerAdapter(SubscriptionAdapter());
     Hive.registerAdapter(SubscriptionFrequencyAdapter());
+    Hive.registerAdapter(RecurringPaymentAdapter());
+    Hive.registerAdapter(RecurringFrequencyAdapter());
     Hive.registerAdapter(AppConfigAdapter());
     Hive.registerAdapter(CurrencyAdapter());
     Hive.registerAdapter(DateFormatAdapter());
@@ -47,6 +51,9 @@ class HiveService {
     );
     _subscriptionsBox = await Hive.openBox<Subscription>(
       AppConstants.subscriptionsBoxName,
+    );
+    _recurringPaymentsBox = await Hive.openBox<RecurringPayment>(
+      AppConstants.recurringPaymentsBoxName,
     );
     _appConfigBox = await Hive.openBox<AppConfig>(
       AppConstants.appConfigBoxName,
@@ -155,6 +162,7 @@ class HiveService {
     await _categoriesBox.close();
     await _settingsBox.close();
     await _subscriptionsBox.close();
+    await _recurringPaymentsBox.close();
     await _appConfigBox.close();
     await _accountsBox.close();
   }
@@ -165,6 +173,7 @@ class HiveService {
     await _categoriesBox.clear();
     await _settingsBox.clear();
     await _subscriptionsBox.clear();
+    await _recurringPaymentsBox.clear();
     await _appConfigBox.clear();
     await _accountsBox.clear();
     await _initializeDefaultData();
@@ -412,6 +421,92 @@ class HiveService {
     return _subscriptionsBox.values
         .where((subscription) => subscription.isActive)
         .fold(0.0, (sum, subscription) => sum + subscription.yearlyCost);
+  }
+
+  // ==================== MÉTODOS DE PAGOS RECURRENTES ====================
+
+  /// Obtiene todos los pagos recurrentes
+  static List<RecurringPayment> getAllRecurringPayments() {
+    return _recurringPaymentsBox.values.toList();
+  }
+
+  /// Agrega un pago recurrente
+  static Future<void> addRecurringPayment(
+    RecurringPayment recurringPayment,
+  ) async {
+    await _recurringPaymentsBox.put(recurringPayment.id, recurringPayment);
+  }
+
+  /// Actualiza un pago recurrente
+  static Future<void> updateRecurringPayment(
+    RecurringPayment recurringPayment,
+  ) async {
+    await _recurringPaymentsBox.put(recurringPayment.id, recurringPayment);
+  }
+
+  /// Elimina un pago recurrente
+  static Future<void> deleteRecurringPayment(String recurringPaymentId) async {
+    await _recurringPaymentsBox.delete(recurringPaymentId);
+  }
+
+  /// Obtiene un pago recurrente por ID
+  static RecurringPayment? getRecurringPayment(String recurringPaymentId) {
+    return _recurringPaymentsBox.get(recurringPaymentId);
+  }
+
+  /// Obtiene pagos recurrentes activos
+  static List<RecurringPayment> getActiveRecurringPayments() {
+    return _recurringPaymentsBox.values
+        .where((payment) => payment.isActive)
+        .toList();
+  }
+
+  /// Obtiene pagos recurrentes inactivos
+  static List<RecurringPayment> getInactiveRecurringPayments() {
+    return _recurringPaymentsBox.values
+        .where((payment) => !payment.isActive)
+        .toList();
+  }
+
+  /// Obtiene pagos recurrentes por tipo
+  static List<RecurringPayment> getRecurringPaymentsByType(
+    TransactionType type,
+  ) {
+    return _recurringPaymentsBox.values
+        .where((payment) => payment.type == type)
+        .toList();
+  }
+
+  /// Obtiene pagos recurrentes próximos a vencer
+  static List<RecurringPayment> getDueSoonRecurringPayments() {
+    return _recurringPaymentsBox.values
+        .where(
+          (payment) => payment.isActive && payment.isDueSoon,
+        )
+        .toList();
+  }
+
+  /// Obtiene pagos recurrentes vencidos
+  static List<RecurringPayment> getOverdueRecurringPayments() {
+    return _recurringPaymentsBox.values
+        .where(
+          (payment) => payment.isActive && payment.isOverdue,
+        )
+        .toList();
+  }
+
+  /// Busca pagos recurrentes por texto
+  static List<RecurringPayment> searchRecurringPayments(String query) {
+    final lowercaseQuery = query.toLowerCase();
+    return _recurringPaymentsBox.values
+        .where(
+          (payment) =>
+              payment.name.toLowerCase().contains(lowercaseQuery) ||
+              (payment.description?.toLowerCase().contains(lowercaseQuery) ??
+                  false) ||
+              (payment.notes?.toLowerCase().contains(lowercaseQuery) ?? false),
+        )
+        .toList();
   }
 
   // ==================== MÉTODOS DE CONFIGURACIÓN DE APP ====================

@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -14,10 +17,12 @@ import '../providers/category_provider.dart';
 import '../services/notification_service.dart';
 import '../services/timer_service.dart';
 import '../providers/subscription_provider.dart';
+import '../providers/transaction_provider.dart';
 import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../services/premium_service.dart';
 import '../services/purchase_helper.dart';
+import '../services/export_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -220,6 +225,41 @@ class SettingsScreen extends ConsumerWidget {
             SimpleLocalization.getText(ref, 'restoreCategoriesDescription'),
             HugeIconsStrokeRounded.databaseRestore,
             () => _showRestoreCategoriesDialog(context, ref),
+          ),
+        ]),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
+        // Sección de Exportación
+        _buildSection(context, SimpleLocalization.getText(ref, 'exportData'), [
+          ListTile(
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    SimpleLocalization.getText(ref, 'exportTransactions'),
+                  ),
+                ),
+                if (!isPremium)
+                  HugeIcon(
+                    icon: HugeIconsStrokeRounded.star,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+              ],
+            ),
+            subtitle: Text(
+              SimpleLocalization.getText(ref, 'exportTransactionsDescription'),
+            ),
+            leading: HugeIcon(
+              icon: HugeIconsStrokeRounded.downloadSquare02,
+              size: 20,
+            ),
+            trailing: HugeIcon(
+              icon: HugeIconsStrokeRounded.arrowRight01,
+              size: 20,
+            ),
+            onTap: () => _showExportDialog(context, ref),
           ),
         ]),
 
@@ -647,6 +687,8 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showReminderDaysDialog(BuildContext context, WidgetRef ref) {
     final days = [1, 3, 7, 14, 30];
+    final isPremium = ref.read(isPremiumProvider);
+    final currentDays = ref.read(appConfigProvider).subscriptionReminderDays;
 
     showDialog(
       context: context,
@@ -655,30 +697,134 @@ class SettingsScreen extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: days.map((day) {
+            final isPremiumOption = day > 1;
+            final isEnabled = isPremium || !isPremiumOption;
+
             return RadioListTile<int>(
-              title: Text(
-                '$day ${day == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'before')}',
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$day ${day == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'before')}',
+                      style: TextStyle(
+                        color: isEnabled
+                            ? null
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.38),
+                      ),
+                    ),
+                  ),
+                  if (isPremiumOption && !isPremium) ...[
+                    const SizedBox(width: 8),
+                    HugeIcon(
+                      icon: HugeIconsStrokeRounded.star,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ],
               ),
               value: day,
-              groupValue: ref.read(appConfigProvider).subscriptionReminderDays,
-              onChanged: (value) async {
-                if (value != null) {
-                  await ref
-                      .read(appConfigProvider.notifier)
-                      .updateSubscriptionReminderDays(value);
+              groupValue: currentDays,
+              onChanged: isEnabled
+                  ? (value) async {
+                      if (value != null) {
+                        await ref
+                            .read(appConfigProvider.notifier)
+                            .updateSubscriptionReminderDays(value);
 
-                  // Reprogramar todos los recordatorios con la nueva configuración
-                  final subscriptions = ref.read(subscriptionsProvider);
-                  await TimerService.scheduleAllSubscriptionReminders(
-                    subscriptions,
-                  );
+                        // Reprogramar todos los recordatorios con la nueva configuración
+                        final subscriptions = ref.read(subscriptionsProvider);
+                        await TimerService.scheduleAllSubscriptionReminders(
+                          subscriptions,
+                        );
 
-                  Navigator.pop(context);
-                }
-              },
+                        Navigator.pop(context);
+                      }
+                    }
+                  : (value) {
+                      // Mostrar mensaje de que requiere premium
+                      _showPremiumRequiredDialog(context, ref);
+                    },
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  void _showPremiumRequiredDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            HugeIcon(
+              icon: HugeIconsStrokeRounded.star,
+              size: 24,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(SimpleLocalization.getText(ref, 'premiumRequired')),
+            ),
+          ],
+        ),
+        content: Text(
+          SimpleLocalization.getText(ref, 'advancedReminderOptionsPremium'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context); // Cerrar este diálogo
+              Navigator.pop(context); // Cerrar el diálogo de recordatorios
+              _showPremiumDialog(context, ref); // Abrir diálogo de premium
+            },
+            child: Text(SimpleLocalization.getText(ref, 'upgradeToPremium')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExportPremiumRequiredDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            HugeIcon(
+              icon: HugeIconsStrokeRounded.star,
+              size: 24,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(SimpleLocalization.getText(ref, 'premiumRequired')),
+            ),
+          ],
+        ),
+        content: Text(
+          SimpleLocalization.getText(ref, 'dataExportPremiumFeature'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context); // Cerrar este diálogo
+              _showPremiumDialog(context, ref); // Abrir diálogo de premium
+            },
+            child: Text(SimpleLocalization.getText(ref, 'upgradeToPremium')),
+          ),
+        ],
       ),
     );
   }
@@ -874,6 +1020,12 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     '• ${SimpleLocalization.getText(ref, 'unlimitedAccounts')}',
                   ),
+                  Text(
+                    '• ${SimpleLocalization.getText(ref, 'exportTransactions')}',
+                  ),
+                  Text(
+                    '• ${SimpleLocalization.getText(ref, 'moreNotificationsOptions')}',
+                  ),
                 ],
               ],
             );
@@ -964,30 +1116,499 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     String plan,
   ) async {
-    final productsResponse = await ref
-        .read(premiumServiceProvider)
-        .getProducts();
-    final products = productsResponse.productDetails;
-    final id = plan == 'monthly'
-        ? PremiumProducts.monthlyPlan
-        : PremiumProducts.yearlyPlan;
-    final product = products.firstWhere(
-      (p) => p.id == id,
-      orElse: () =>
-          products.isNotEmpty ? products.first : throw 'Producto no encontrado',
-    );
+    try {
+      // Mostrar indicador de carga
+      if (!context.mounted) return;
 
-    await ref.read(premiumServiceProvider).purchaseProduct(product);
-    // Escuchar una vez la actualización de compra y procesarla
-    late StreamSubscription<List<PurchaseDetails>> sub;
-    sub = ref.read(premiumServiceProvider).purchaseUpdates.listen((
-      updates,
-    ) async {
-      for (final purchase in updates) {
-        await PurchaseHelper.processPurchase(purchase, ref);
+      // Verificar disponibilidad de compras
+      final premiumService = ref.read(premiumServiceProvider);
+      final isAvailable = await premiumService.isAvailable();
+
+      if (!isAvailable) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                SimpleLocalization.getText(ref, 'purchasesNotAvailable'),
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
       }
-      await sub.cancel();
-    });
+
+      // Obtener productos
+      final productsResponse = await premiumService.getProducts();
+      final products = productsResponse.productDetails;
+
+      if (products.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                SimpleLocalization.getText(ref, 'productsNotFound'),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Verificar productos no encontrados (solo log, no mostrar al usuario)
+      if (productsResponse.notFoundIDs.isNotEmpty) {
+        debugPrint(
+          'Productos no encontrados: ${productsResponse.notFoundIDs.join(", ")}',
+        );
+        // Si no hay productos disponibles, ya se mostrará el mensaje apropiado más abajo
+      }
+
+      // Encontrar el producto seleccionado
+      final id = plan == 'monthly'
+          ? PremiumProducts.monthlyPlan
+          : PremiumProducts.yearlyPlan;
+
+      // Buscar el producto específico
+      ProductDetails product;
+      try {
+        product = products.firstWhere((p) => p.id == id);
+      } catch (e) {
+        // Si no se encuentra el producto específico, usar el primero disponible
+        if (products.isNotEmpty) {
+          product = products.first;
+          // No mostrar mensaje técnico al usuario, solo usar el producto disponible
+        } else {
+          throw Exception('No se encontraron productos disponibles');
+        }
+      }
+
+      // Mostrar mensaje de inicio de compra
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              SimpleLocalization.getText(ref, 'processingPurchase'),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Iniciar la compra
+      await premiumService.purchaseProduct(product);
+
+      // Escuchar actualizaciones de compra
+      late StreamSubscription<List<PurchaseDetails>> subscription;
+      subscription = premiumService.purchaseUpdates.listen(
+        (purchases) async {
+          for (final purchase in purchases) {
+            try {
+              await PurchaseHelper.processPurchase(purchase, ref);
+
+              if (purchase.status == PurchaseStatus.purchased) {
+                // Compra exitosa
+                if (context.mounted) {
+                  Navigator.pop(context); // Cerrar el diálogo
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        SimpleLocalization.getText(ref, 'purchaseSuccessful'),
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+                await subscription.cancel();
+              } else if (purchase.status == PurchaseStatus.error) {
+                // Error en la compra - mostrar mensaje amigable
+                final errorCode = purchase.error?.code;
+                debugPrint(
+                  'Error en compra - Código: $errorCode, Mensaje: ${purchase.error?.message}',
+                );
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        _getUserFriendlyErrorMessage(ref, errorCode),
+                      ),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                }
+                await subscription.cancel();
+              } else if (purchase.status == PurchaseStatus.canceled) {
+                // Compra cancelada
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        SimpleLocalization.getText(ref, 'purchaseCanceled'),
+                      ),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+                await subscription.cancel();
+              }
+            } catch (e) {
+              debugPrint('Error procesando compra: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      SimpleLocalization.getText(ref, 'purchaseError'),
+                    ),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+              await subscription.cancel();
+            }
+          }
+        },
+        onError: (error) {
+          debugPrint('Error en stream de compras: $error');
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(SimpleLocalization.getText(ref, 'purchaseError')),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          subscription.cancel();
+        },
+      );
+    } catch (e) {
+      debugPrint('Error en _processPurchase: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(SimpleLocalization.getText(ref, 'purchaseError')),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Obtiene un mensaje de error amigable para el usuario basado en el código de error
+  String _getUserFriendlyErrorMessage(WidgetRef ref, String? errorCode) {
+    // Mapear códigos de error comunes a mensajes amigables
+    switch (errorCode) {
+      case 'ERROR_ITEM_UNAVAILABLE':
+        return SimpleLocalization.getText(ref, 'productNotAvailable');
+      case 'ERROR_USER_CANCELED':
+        return SimpleLocalization.getText(ref, 'purchaseCanceled');
+      case 'ERROR_PAYMENT_INVALID':
+        return SimpleLocalization.getText(ref, 'paymentMethodInvalid');
+      case 'ERROR_SERVICE_UNAVAILABLE':
+        return SimpleLocalization.getText(ref, 'purchaseServiceUnavailable');
+      case 'ERROR_NETWORK_ERROR':
+        return SimpleLocalization.getText(ref, 'networkErrorCheckConnection');
+      case 'ERROR_DEVELOPER_ERROR':
+        return SimpleLocalization.getText(ref, 'purchaseIssueContactSupport');
+      default:
+        return SimpleLocalization.getText(ref, 'purchaseError');
+    }
+  }
+
+  void _showExportDialog(BuildContext context, WidgetRef ref) {
+    // Verificar si el usuario es premium
+    final isPremium = ref.read(isPremiumProvider);
+
+    if (!isPremium) {
+      _showExportPremiumRequiredDialog(context, ref);
+      return;
+    }
+
+    final transactions = ref.read(transactionsProvider);
+
+    if (transactions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            SimpleLocalization.getText(ref, 'noTransactionsToExport'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(SimpleLocalization.getText(ref, 'exportTransactions')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(SimpleLocalization.getText(ref, 'selectExportFormat')),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: HugeIcon(
+                icon: HugeIconsStrokeRounded.file01,
+                size: 24,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Excel (.xlsx)'),
+              subtitle: Text(
+                SimpleLocalization.getText(ref, 'exportToExcelFormat'),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _exportTransactions(context, ref, 'excel');
+              },
+            ),
+            ListTile(
+              leading: HugeIcon(
+                icon: HugeIconsStrokeRounded.file01,
+                size: 24,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('CSV (.csv)'),
+              subtitle: Text(
+                SimpleLocalization.getText(ref, 'exportToCsvFormat'),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _exportTransactions(context, ref, 'csv');
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportTransactions(
+    BuildContext context,
+    WidgetRef ref,
+    String format,
+  ) async {
+    // Obtener las transacciones de la cuenta actual (las que se ven en la app)
+    final transactions = ref.read(transactionsProvider);
+    debugPrint('Total de transacciones a exportar: ${transactions.length}');
+
+    // Log para verificar que hay transacciones
+    if (transactions.isNotEmpty) {
+      debugPrint(
+        'Primera transacción: ${transactions.first.title}, Monto: ${transactions.first.amount}',
+      );
+    }
+
+    try {
+      // Mostrar indicador de carga
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      String? filePath;
+      if (format == 'excel') {
+        filePath = await ExportService.exportToExcel(transactions, ref);
+      } else {
+        filePath = await ExportService.exportToCSV(transactions, ref);
+      }
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar indicador de carga
+
+      if (filePath != null) {
+        // Obtener el nombre del archivo para mostrar la ruta
+        final fileName = filePath.split('/').last;
+
+        // Mostrar opciones: compartir o guardar
+        if (!context.mounted) return;
+        final action = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              SimpleLocalization.getText(ref, 'fileExportedSuccessfully'),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  SimpleLocalization.getText(
+                    ref,
+                    'whatWouldYouLikeToDoWithFile',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (Platform.isAndroid)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          SimpleLocalization.getText(ref, 'saveLocation'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Downloads/$fileName',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'share'),
+                child: Text(SimpleLocalization.getText(ref, 'share')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'save'),
+                child: Text(SimpleLocalization.getText(ref, 'saveToDownloads')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'cancel'),
+                child: Text(SimpleLocalization.getText(ref, 'cancel')),
+              ),
+            ],
+          ),
+        );
+
+        if (action == 'share') {
+          await ExportService.shareFile(filePath);
+        } else if (action == 'save') {
+          // Guardar el archivo
+          final savedPath = await ExportService.saveFileToDownloads(filePath);
+
+          if (context.mounted) {
+            if (savedPath != null) {
+              final savedFileName = savedPath.split('/').last;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              SimpleLocalization.getText(
+                                ref,
+                                'fileSavedSuccessfully',
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        SimpleLocalization.getText(
+                          ref,
+                          'locationDownloads',
+                        ).replaceAll('{fileName}', savedFileName),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 4),
+                  action: SnackBarAction(
+                    label: SimpleLocalization.getText(ref, 'ok'),
+                    textColor: Colors.white,
+                    onPressed: () {},
+                  ),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    SimpleLocalization.getText(
+                      ref,
+                      'errorSavingFileToDownloads',
+                    ),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        }
+
+        if (action != 'cancel' && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                SimpleLocalization.getText(
+                  ref,
+                  'transactionsExportedSuccessfully',
+                ),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              SimpleLocalization.getText(ref, 'errorExportingTransactions'),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar indicador de carga si está abierto
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${SimpleLocalization.getText(ref, 'error')}: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   void _showResetDialog(BuildContext context, WidgetRef ref) {
@@ -1049,34 +1670,25 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   String _getDateFormatDisplayName(String format, WidgetRef ref) {
-    final isEnglish = ref.read(appConfigProvider).language == 'en';
-    final names = isEnglish
-        ? {
-            'DD/MM/YYYY': 'DD/MM/YYYY (25/12/2024)',
-            'MM/DD/YYYY': 'MM/DD/YYYY (12/25/2024)',
-            'YYYY-MM-DD': 'YYYY-MM-DD (2024-12-25)',
-          }
-        : {
-            'DD/MM/YYYY': 'DD/MM/YYYY (25/12/2024)',
-            'MM/DD/YYYY': 'MM/DD/YYYY (12/25/2024)',
-            'YYYY-MM-DD': 'YYYY-MM-DD (2024-12-25)',
-          };
+    final names = {
+      'DD/MM/YYYY': 'DD/MM/YYYY (25/12/2024)',
+      'MM/DD/YYYY': 'MM/DD/YYYY (12/25/2024)',
+      'YYYY-MM-DD': 'YYYY-MM-DD (2024-12-25)',
+    };
     return names[format] ?? format;
   }
 
   String _getFontSizeDisplayName(String size, WidgetRef ref) {
-    final isEnglish = ref.read(appConfigProvider).language == 'en';
-    final names = isEnglish
-        ? {'small': 'Small', 'normal': 'Normal', 'large': 'Large'}
-        : {'small': 'Pequeño', 'normal': 'Normal', 'large': 'Grande'};
+    final names = {
+      'small': SimpleLocalization.getText(ref, 'smallFont'),
+      'normal': SimpleLocalization.getText(ref, 'normalFont'),
+      'large': SimpleLocalization.getText(ref, 'largeFont'),
+    };
     return names[size] ?? size;
   }
 
   String _getLanguageDisplayName(String language, WidgetRef ref) {
-    final isEnglish = ref.read(appConfigProvider).language == 'en';
-    final names = isEnglish
-        ? {'es': 'Español', 'en': 'English'}
-        : {'es': 'Español', 'en': 'English'};
+    final names = {'es': 'Español', 'en': 'English'};
     return names[language] ?? language;
   }
 
@@ -1287,7 +1899,6 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showFaqDialog(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isEnglish = ref.read(appConfigProvider).language == 'en';
 
     showDialog(
       context: context,
@@ -1336,79 +1947,87 @@ class SettingsScreen extends ConsumerWidget {
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'How do I add a transaction?'
-                            : '¿Cómo agrego una transacción?',
-                        isEnglish
-                            ? 'Tap the + button on the dashboard screen to add a new transaction. Select the type (income or expense), enter the amount, choose a category, and save.'
-                            : 'Toca el botón + en la pantalla de inicio para agregar una nueva transacción. Selecciona el tipo (ingreso o gasto), ingresa el monto, elige una categoría y guarda.',
+                        SimpleLocalization.getText(ref, 'faqHowAddTransaction'),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowAddTransactionAnswer',
+                        ),
                       ),
                       const SizedBox(height: 5),
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'How do I manage categories?'
-                            : '¿Cómo gestiono las categorías?',
-                        isEnglish
-                            ? 'Go to Settings > Management > Manage Categories. You can create, edit, and delete custom categories. Default categories can be restored at any time.'
-                            : 'Ve a Configuración > Gestión > Gestionar Categorías. Puedes crear, editar y eliminar categorías personalizadas. Las categorías por defecto se pueden restaurar en cualquier momento.',
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowManageCategories',
+                        ),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowManageCategoriesAnswer',
+                        ),
                       ),
                       const SizedBox(height: 5),
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'How do subscriptions work?'
-                            : '¿Cómo funcionan las suscripciones?',
-                        isEnglish
-                            ? 'Subscriptions allow you to track recurring payments. Set the frequency, amount, and next payment date. You\'ll receive reminders before the payment is due.'
-                            : 'Las suscripciones te permiten rastrear pagos recurrentes. Establece la frecuencia, el monto y la fecha del próximo pago. Recibirás recordatorios antes de que venza el pago.',
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowSubscriptionsWork',
+                        ),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowSubscriptionsWorkAnswer',
+                        ),
                       ),
                       const SizedBox(height: 5),
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'What is the premium version?'
-                            : '¿Qué es la versión premium?',
-                        isEnglish
-                            ? 'The premium version removes ads, provides priority support, and allows unlimited accounts. You can purchase it monthly or annually with a discount.'
-                            : 'La versión premium elimina los anuncios, proporciona soporte prioritario y permite cuentas ilimitadas. Puedes comprarla mensualmente o anualmente con descuento.',
+                        SimpleLocalization.getText(ref, 'faqWhatIsPremium'),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqWhatIsPremiumAnswer',
+                        ),
                       ),
 
                       const SizedBox(height: 5),
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'How do I set a monthly expense limit?'
-                            : '¿Cómo establezco un límite de gastos mensual?',
-                        isEnglish
-                            ? 'Go to Settings > Financial Settings > Monthly Expense Limit. Enter your desired limit, and the app will track your spending against it.'
-                            : 'Ve a Configuración > Configuración Financiera > Límite de Gastos Mensual. Ingresa tu límite deseado y la app rastreará tus gastos comparándolos con él.',
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowSetMonthlyLimit',
+                        ),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowSetMonthlyLimitAnswer',
+                        ),
                       ),
                       const SizedBox(height: 5),
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'Can I use multiple accounts?'
-                            : '¿Puedo usar múltiples cuentas?',
-                        isEnglish
-                            ? 'Yes! You can create and switch between multiple accounts. Each account has its own transactions, subscriptions, and balance. Premium users can have unlimited accounts.'
-                            : '¡Sí! Puedes crear y cambiar entre múltiples cuentas. Cada cuenta tiene sus propias transacciones, suscripciones y balance. Los usuarios premium pueden tener cuentas ilimitadas.',
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqCanUseMultipleAccounts',
+                        ),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqCanUseMultipleAccountsAnswer',
+                        ),
                       ),
                       const SizedBox(height: 5),
                       _buildFaqItem(
                         context,
                         ref,
-                        isEnglish
-                            ? 'How do notifications work?'
-                            : '¿Cómo funcionan las notificaciones?',
-                        isEnglish
-                            ? 'Enable notifications in Settings > Notifications. You\'ll receive reminders for subscription payments before they\'re due. You can configure how many days in advance you want to be notified.'
-                            : 'Habilita las notificaciones en Configuración > Notificaciones. Recibirás recordatorios para los pagos de suscripciones antes de que venzan. Puedes configurar con cuántos días de anticipación quieres ser notificado.',
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowNotificationsWork',
+                        ),
+                        SimpleLocalization.getText(
+                          ref,
+                          'faqHowNotificationsWorkAnswer',
+                        ),
                       ),
                     ],
                   ),
@@ -1453,7 +2072,6 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showSupportDialog(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isEnglish = ref.read(appConfigProvider).language == 'en';
 
     showDialog(
       context: context,
@@ -1553,18 +2171,7 @@ class SettingsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: HugeIcon(
-                                icon: HugeIconsStrokeRounded.mail01,
-                                size: 24,
-                                color: Colors.white,
-                              ),
-                            ),
+                           
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
@@ -1647,12 +2254,18 @@ class SettingsScreen extends ConsumerWidget {
                           child: InkWell(
                             onTap: () async {
                               final email = 'soporte@cuidatuplata.com';
-                              final subject = isEnglish
-                                  ? 'Support Request - CuidaTuPlata'
-                                  : 'Solicitud de Soporte - CuidaTuPlata';
-                              final body = isEnglish
-                                  ? 'Hello,\n\nI need help with:\n\n\n\nApp Version: ${AppConstants.appVersion}'
-                                  : 'Hola,\n\nNecesito ayuda con:\n\n\n\nVersión de la App: ${AppConstants.appVersion}';
+                              final subject = SimpleLocalization.getText(
+                                ref,
+                                'supportRequestSubject',
+                              );
+                              final body =
+                                  SimpleLocalization.getText(
+                                    ref,
+                                    'supportEmailBody',
+                                  ).replaceAll(
+                                    '{version}',
+                                    AppConstants.appVersion,
+                                  );
 
                               await Clipboard.setData(
                                 ClipboardData(
@@ -1664,9 +2277,10 @@ class SettingsScreen extends ConsumerWidget {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      isEnglish
-                                          ? 'Email information copied. Please paste it in your email client.'
-                                          : 'Información del email copiada. Por favor pégalo en tu cliente de email.',
+                                      SimpleLocalization.getText(
+                                        ref,
+                                        'emailInfoCopied',
+                                      ),
                                     ),
                                     duration: const Duration(seconds: 3),
                                     backgroundColor: theme.colorScheme.primary,
@@ -1753,9 +2367,10 @@ class SettingsScreen extends ConsumerWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    isEnglish
-                                        ? 'We typically respond within 24-48 hours. For urgent matters, please mention "URGENT" in the subject line.'
-                                        : 'Normalmente respondemos en 24-48 horas. Para asuntos urgentes, por favor menciona "URGENTE" en el asunto.',
+                                    SimpleLocalization.getText(
+                                      ref,
+                                      'supportResponseTime',
+                                    ),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),
@@ -1798,7 +2413,7 @@ class SettingsScreen extends ConsumerWidget {
                             const SizedBox(height: 12),
                             _buildInfoRow(
                               theme,
-                              SimpleLocalization.getText(ref, 'appName'),
+                              SimpleLocalization.getText(ref, 'appVersion'),
                               AppConstants.appVersion,
                             ),
                             const SizedBox(height: 8),

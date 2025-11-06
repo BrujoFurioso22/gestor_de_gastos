@@ -17,35 +17,23 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AppConfig(
-      currency: fields[0] as String? ?? 'USD',
-      dateFormat: fields[1] as String? ?? 'DD/MM/YYYY',
-      decimalSeparator: fields[2] as String? ?? '.',
-      showCents: fields[3] as bool? ?? true,
-      theme: fields[4] as String? ?? 'system',
-      fontSize: fields[5] as String? ?? 'normal',
-      language: fields[6] as String? ?? 'es',
-      vibration: fields[7] as bool? ?? true,
-      sound: fields[8] as bool? ?? true,
-      subscriptionReminderDays: fields[9] as int? ?? 3,
-      notificationsEnabled: fields.containsKey(10) && fields[10] is bool
-          ? fields[10] as bool
-          : true,
-      monthlyExpenseLimit: fields.containsKey(11)
-          ? (fields[11] as num?)?.toDouble() ?? 0.0
-          : 0.0,
-      weeklySummary: fields.containsKey(12) && fields[12] is bool
-          ? fields[12] as bool
-          : false,
-      weekStartsOnMonday: fields.containsKey(13) && fields[13] is bool
-          ? fields[13] as bool
-          : true,
-      currentAccountId: fields.containsKey(16) ? fields[16] as String? : null,
-      createdAt: fields.containsKey(14) && fields[14] is DateTime
-          ? fields[14] as DateTime?
-          : null,
-      updatedAt: fields.containsKey(15) && fields[15] is DateTime
-          ? fields[15] as DateTime?
-          : null,
+      currency: fields[0] as String,
+      dateFormat: fields[1] as String,
+      decimalSeparator: fields[2] as String,
+      showCents: fields[3] as bool,
+      theme: fields[4] as String,
+      fontSize: fields[5] as String,
+      language: fields[6] as String,
+      vibration: fields[7] as bool,
+      sound: fields[8] as bool,
+      subscriptionReminderDays: fields[9] as int,
+      notificationsEnabled: fields[10] as bool,
+      monthlyExpenseLimit: fields[11] as double,
+      weeklySummary: fields[12] as bool,
+      weekStartsOnMonday: fields[13] as bool,
+      currentAccountId: fields[16] as String?,
+      createdAt: fields[14] as DateTime?,
+      updatedAt: fields[15] as DateTime?,
     );
   }
 

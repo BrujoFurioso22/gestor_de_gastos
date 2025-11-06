@@ -19,9 +19,13 @@ class ModernToggleSelector<T> extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
       ),
+      padding: const EdgeInsets.all(3),
       child: Row(
         children: options.map((option) {
           return Expanded(
@@ -41,31 +45,31 @@ class ModernToggleSelector<T> extends StatelessWidget {
       onTap: () => onChanged(option.value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? option.color.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(9),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             HugeIcon(
               icon: option.icon,
-              size: 20,
+              size: 18,
               color: isSelected
-                  ? option.color
-                  : theme.colorScheme.onSurfaceVariant,
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurface,
             ),
             const SizedBox(width: 8),
             Text(
               option.label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isSelected
-                    ? option.color
-                    : theme.colorScheme.onSurfaceVariant,
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 14,
               ),
             ),
           ],

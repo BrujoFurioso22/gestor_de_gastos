@@ -8,7 +8,7 @@ import '../services/admob_service.dart';
 import '../services/simple_localization.dart';
 import 'dashboard_screen.dart';
 import 'history_screen.dart';
-import 'subscriptions_screen.dart';
+import 'services_screen.dart';
 import 'settings_screen.dart';
 
 class MainNavigation extends ConsumerStatefulWidget {
@@ -27,7 +27,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const HistoryScreen(),
-    const SubscriptionsScreen(),
+    const ServicesScreen(),
     const SettingsScreen(),
   ];
 
@@ -162,14 +162,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
                 ),
                 BottomNavigationBarItem(
                   icon: _buildNavIcon(
-                    HugeIconsStrokeRounded.money01,
+                    HugeIconsStrokeRounded.dashboardSquare02,
                     isSelected: _currentIndex == 2,
                   ),
                   activeIcon: _buildNavIcon(
-                    HugeIconsStrokeRounded.money01,
+                    HugeIconsStrokeRounded.dashboardSquare02,
                     isSelected: true,
                   ),
-                  label: SimpleLocalization.getText(ref, 'subscriptions'),
+                  label: SimpleLocalization.getText(ref, 'services'),
                 ),
                 BottomNavigationBarItem(
                   icon: _buildNavIcon(

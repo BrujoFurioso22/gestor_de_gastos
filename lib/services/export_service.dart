@@ -1,78 +1,92 @@
 import 'dart:io';
 import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
-import '../providers/transaction_provider.dart';
-import '../providers/subscription_provider.dart';
-import '../providers/account_provider.dart';
-import '../providers/app_config_provider.dart';
 import '../models/transaction.dart';
+import '../models/category.dart';
+import '../services/hive_service.dart';
+import '../providers/app_config_provider.dart';
+import '../utils/app_formatters.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ExportService {
-  /// Formatea una fecha según la configuración de la app
-  static String _formatDate(DateTime date, appConfig) {
-    String pattern;
-    switch (appConfig.dateFormat) {
-      case 'DD/MM/YYYY':
-        pattern = 'dd/MM/yyyy';
-        break;
-      case 'MM/DD/YYYY':
-        pattern = 'MM/dd/yyyy';
-        break;
-      case 'YYYY-MM-DD':
-        pattern = 'yyyy-MM-dd';
-        break;
-      default:
-        pattern = 'dd/MM/yyyy';
-    }
-    return DateFormat(pattern).format(date);
+  /// Solicita permisos de almacenamiento
+  /// Nota: Para Android 10+, no se requieren permisos para guardar en el directorio de la app
+  static Future<bool> requestStoragePermission() async {
+    // En Android 10+ (API 29+), no se necesitan permisos para guardar en el directorio de la app
+    // Solo se necesitan si queremos guardar en almacenamiento externo público
+    // Como estamos usando getApplicationDocumentsDirectory(), no se requieren permisos
+    return true;
   }
 
   /// Exporta transacciones a Excel
-  static Future<String?> exportToExcel(WidgetRef ref) async {
+  static Future<String?> exportToExcel(
+    List<Transaction> transactions,
+    WidgetRef ref,
+  ) async {
     try {
-      // Obtener datos
-      final transactions = ref.read(transactionsProvider);
-      final subscriptions = ref.read(subscriptionsProvider);
-      final accounts = ref.read(accountProvider);
-      final appConfig = ref.read(appConfigProvider);
+      debugPrint(
+        'Iniciando exportación a Excel con ${transactions.length} transacciones',
+      );
+
+      if (transactions.isEmpty) {
+        debugPrint('No hay transacciones para exportar');
+        throw Exception('No hay transacciones para exportar');
+      }
 
       // Crear archivo Excel
       final excel = Excel.createExcel();
+      excel.delete('Sheet1');
       final sheet = excel['Transacciones'];
+
+      debugPrint('Hoja de Excel creada');
+
+      // Obtener todas las categorías
+      final categories = HiveService.getAllCategories();
+      final categoryMap = {for (var cat in categories) cat.id: cat};
 
       // Encabezados
       final headers = [
         'Fecha',
         'Tipo',
+        'Título',
         'Categoría',
-        'Descripción',
         'Monto',
+        'Notas',
         'Cuenta',
       ];
-
       for (int i = 0; i < headers.length; i++) {
-        sheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-            .value = TextCellValue(
-          headers[i],
+        final cell = sheet.cell(
+          CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
         );
+        cell.value = TextCellValue(headers[i]);
+        cell.cellStyle = CellStyle(bold: true);
       }
 
-      // Datos de transacciones
-      int row = 1;
-      for (final transaction in transactions) {
-        final account = accounts.firstWhere(
-          (acc) => acc.id == transaction.accountId,
-          orElse: () => accounts.isNotEmpty ? accounts.first : accounts.first,
+      // Agregar datos
+      debugPrint('Agregando ${transactions.length} transacciones al Excel...');
+      for (int i = 0; i < transactions.length; i++) {
+        final transaction = transactions[i];
+        debugPrint(
+          'Procesando transacción ${i + 1}: ${transaction.title}, ${transaction.amount}, ${transaction.date}',
         );
 
+        final category = categoryMap[transaction.category];
+        final categoryName = category != null
+            ? (DefaultCategories.isDefaultCategory(category.id)
+                  ? DefaultCategories.getTranslatedName(
+                      category.id,
+                      ref.read(appConfigProvider).language,
+                    )
+                  : category.name)
+            : transaction.category;
+
+        final row = i + 1;
         sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
             .value = TextCellValue(
-          _formatDate(transaction.date, appConfig),
+          AppFormatters.formatDate(transaction.date, ref),
         );
         sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
@@ -82,14 +96,12 @@ class ExportService {
         sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
             .value = TextCellValue(
-          transaction.category.isNotEmpty
-              ? transaction.category
-              : 'Sin categoría',
+          transaction.title ?? '',
         );
         sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
             .value = TextCellValue(
-          transaction.title ?? 'Sin título',
+          categoryName,
         );
         sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
@@ -99,179 +111,167 @@ class ExportService {
         sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
             .value = TextCellValue(
-          account.name,
+          transaction.notes ?? '',
         );
-        row++;
-      }
-
-      // Hoja de suscripciones
-      final subscriptionSheet = excel['Suscripciones'];
-      final subscriptionHeaders = [
-        'Nombre',
-        'Descripción',
-        'Monto',
-        'Frecuencia',
-        'Fecha de inicio',
-        'Fecha de fin',
-        'Estado',
-      ];
-
-      for (int i = 0; i < subscriptionHeaders.length; i++) {
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-            .value = TextCellValue(
-          subscriptionHeaders[i],
-        );
-      }
-
-      // Datos de suscripciones
-      row = 1;
-      for (final subscription in subscriptions) {
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-            .value = TextCellValue(
-          subscription.name,
-        );
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-            .value = TextCellValue(
-          subscription.description,
-        );
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
-            .value = DoubleCellValue(
-          subscription.amount,
-        );
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
-            .value = TextCellValue(
-          subscription.frequency.name,
-        );
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
-            .value = TextCellValue(
-          _formatDate(subscription.startDate, appConfig),
-        );
-        subscriptionSheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
-            .value = TextCellValue(
-          subscription.endDate != null
-              ? _formatDate(subscription.endDate!, appConfig)
-              : 'Sin fin',
-        );
-        subscriptionSheet
+        sheet
             .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
             .value = TextCellValue(
-          subscription.isActive ? 'Activa' : 'Inactiva',
+          transaction.accountId ?? '',
         );
-        row++;
       }
 
       // Guardar archivo
+      debugPrint('Guardando archivo Excel...');
       final directory = await getApplicationDocumentsDirectory();
-      final fileName =
-          'CuidaTuPlata_${DateTime.now().millisecondsSinceEpoch}.xlsx';
-      final filePath = '${directory.path}/$fileName';
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')[0];
+      final filePath = '${directory.path}/transacciones_$timestamp.xlsx';
+      debugPrint('Ruta del archivo: $filePath');
 
       final fileBytes = excel.save();
       if (fileBytes != null) {
+        debugPrint('Archivo Excel generado, tamaño: ${fileBytes.length} bytes');
         final file = File(filePath);
         await file.writeAsBytes(fileBytes);
+        debugPrint('Archivo guardado exitosamente en: $filePath');
         return filePath;
+      } else {
+        debugPrint('Error: excel.save() retornó null');
+        throw Exception('Error al generar el archivo Excel');
       }
-
-      return null;
     } catch (e) {
-      throw Exception('Error al exportar a Excel: $e');
+      debugPrint('Error exportando a Excel: $e');
+      rethrow;
     }
   }
 
   /// Exporta transacciones a CSV
-  static Future<String?> exportToCsv(WidgetRef ref) async {
+  static Future<String?> exportToCSV(
+    List<Transaction> transactions,
+    WidgetRef ref,
+  ) async {
     try {
-      // Obtener datos
-      final transactions = ref.read(transactionsProvider);
-      final subscriptions = ref.read(subscriptionsProvider);
-      final accounts = ref.read(accountProvider);
-      final appConfig = ref.read(appConfigProvider);
-
-      // Crear contenido CSV
-      final csvContent = StringBuffer();
-
-      // Encabezados
-      csvContent.writeln('Fecha,Tipo,Categoría,Descripción,Monto,Cuenta');
-
-      // Datos de transacciones
-      for (final transaction in transactions) {
-        final account = accounts.firstWhere(
-          (acc) => acc.id == transaction.accountId,
-          orElse: () => accounts.isNotEmpty ? accounts.first : accounts.first,
-        );
-
-        csvContent.writeln(
-          [
-            _formatDate(transaction.date, appConfig),
-            transaction.type == TransactionType.income ? 'Ingreso' : 'Gasto',
-            transaction.category.isNotEmpty
-                ? transaction.category
-                : 'Sin categoría',
-            transaction.title ?? 'Sin título',
-            transaction.amount.toString(),
-            account.name,
-          ].join(','),
-        );
-      }
-
-      // Separador para suscripciones
-      csvContent.writeln('\n--- SUSCRIPCIONES ---');
-      csvContent.writeln(
-        'Nombre,Descripción,Monto,Frecuencia,Fecha de inicio,Fecha de fin,Estado',
+      debugPrint(
+        'Iniciando exportación a CSV con ${transactions.length} transacciones',
       );
 
-      // Datos de suscripciones
-      for (final subscription in subscriptions) {
-        csvContent.writeln(
-          [
-            subscription.name,
-            subscription.description,
-            subscription.amount.toString(),
-            subscription.frequency.name,
-            _formatDate(subscription.startDate, appConfig),
-            subscription.endDate != null
-                ? _formatDate(subscription.endDate!, appConfig)
-                : 'Sin fin',
-            subscription.isActive ? 'Activa' : 'Inactiva',
-          ].join(','),
+      if (transactions.isEmpty) {
+        debugPrint('No hay transacciones para exportar');
+        throw Exception('No hay transacciones para exportar');
+      }
+
+      // Obtener todas las categorías
+      final categories = HiveService.getAllCategories();
+      final categoryMap = {for (var cat in categories) cat.id: cat};
+
+      // Crear contenido CSV
+      final buffer = StringBuffer();
+
+      // Encabezados
+      buffer.writeln('Fecha,Tipo,Título,Categoría,Monto,Notas,Cuenta');
+
+      // Agregar datos
+      debugPrint('Agregando ${transactions.length} transacciones al CSV...');
+      for (final transaction in transactions) {
+        debugPrint(
+          'Procesando transacción: ${transaction.title}, ${transaction.amount}, ${transaction.date}',
+        );
+
+        final category = categoryMap[transaction.category];
+        final categoryName = category != null
+            ? (DefaultCategories.isDefaultCategory(category.id)
+                  ? DefaultCategories.getTranslatedName(
+                      category.id,
+                      ref.read(appConfigProvider).language,
+                    )
+                  : category.name)
+            : transaction.category;
+
+        final type = transaction.type == TransactionType.income
+            ? 'Ingreso'
+            : 'Gasto';
+        final title = (transaction.title ?? '')
+            .replaceAll(',', ';')
+            .replaceAll('\n', ' ');
+        final notes = (transaction.notes ?? '')
+            .replaceAll(',', ';')
+            .replaceAll('\n', ' ');
+        final amount = transaction.amount.toStringAsFixed(2);
+        final date = AppFormatters.formatDate(transaction.date, ref);
+        final account = transaction.accountId ?? '';
+
+        buffer.writeln(
+          '$date,$type,"$title","$categoryName",$amount,"$notes","$account"',
         );
       }
 
       // Guardar archivo
+      debugPrint('Guardando archivo CSV...');
       final directory = await getApplicationDocumentsDirectory();
-      final fileName =
-          'CuidaTuPlata_${DateTime.now().millisecondsSinceEpoch}.csv';
-      final filePath = '${directory.path}/$fileName';
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')[0];
+      final filePath = '${directory.path}/transacciones_$timestamp.csv';
+      debugPrint('Ruta del archivo: $filePath');
 
       final file = File(filePath);
-      await file.writeAsString(csvContent.toString());
+      final content = buffer.toString();
+      debugPrint(
+        'Contenido CSV generado, tamaño: ${content.length} caracteres',
+      );
+      await file.writeAsString(content);
+      debugPrint('Archivo guardado exitosamente en: $filePath');
       return filePath;
     } catch (e) {
-      throw Exception('Error al exportar a CSV: $e');
+      debugPrint('Error exportando a CSV: $e');
+      rethrow;
     }
   }
 
   /// Comparte el archivo exportado
   static Future<void> shareFile(String filePath) async {
     try {
-      final file = File(filePath);
-      if (await file.exists()) {
-        await Share.shareXFiles([
-          XFile(filePath),
-        ], text: 'Archivo exportado desde CuidaTuPlata');
-      } else {
-        throw Exception('El archivo no existe: $filePath');
-      }
+      final file = XFile(filePath);
+      // Usar shareXFiles con subject para mejor compatibilidad
+      await Share.shareXFiles(
+        [file],
+        text: 'Exportación de transacciones',
+        subject: 'Transacciones exportadas',
+      );
     } catch (e) {
-      throw Exception('Error al compartir archivo: $e');
+      debugPrint('Error compartiendo archivo: $e');
+      rethrow;
+    }
+  }
+
+  /// Guarda el archivo en una ubicación accesible usando file_picker
+  static Future<String?> saveFileToDownloads(String filePath) async {
+    try {
+      if (Platform.isAndroid) {
+        // En Android, intentar guardar en Downloads
+        final directory = Directory('/storage/emulated/0/Download');
+        bool exists = await directory.exists();
+        if (!exists) {
+          await directory.create(recursive: true);
+        }
+
+        if (await directory.exists()) {
+          final fileName = filePath.split('/').last;
+          final newPath = '${directory.path}/$fileName';
+          final sourceFile = File(filePath);
+          await sourceFile.copy(newPath);
+          debugPrint('Archivo guardado en Downloads: $newPath');
+          return newPath;
+        }
+      }
+      // Si no se puede guardar en Downloads, retornar la ruta original
+      return filePath;
+    } catch (e) {
+      debugPrint('Error guardando archivo en Downloads: $e');
+      return filePath;
     }
   }
 }

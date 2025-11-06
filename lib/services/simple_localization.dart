@@ -106,6 +106,14 @@ class SimpleLocalization {
       'eng': 'Delete All Data',
     },
     'exportData': {'esp': 'Exportar Datos', 'eng': 'Export Data'},
+    'exportTransactions': {
+      'esp': 'Exportar Transacciones',
+      'eng': 'Export Transactions',
+    },
+    'exportTransactionsDescription': {
+      'esp': 'Exporta tus transacciones a Excel o CSV',
+      'eng': 'Export your transactions to Excel or CSV',
+    },
     'subscriptionReminders': {
       'esp': 'Recordatorio de Suscripciones',
       'eng': 'Subscription Reminders',
@@ -313,6 +321,7 @@ class SimpleLocalization {
       'eng': 'Priority support',
     },
     'close': {'esp': 'Cerrar', 'eng': 'Close'},
+    'ok': {'esp': 'Aceptar', 'eng': 'OK'},
     'upgrade': {'esp': 'Actualizar', 'eng': 'Upgrade'},
     'settingsRestored': {
       'esp': 'Configuración restaurada',
@@ -489,9 +498,13 @@ class SimpleLocalization {
       'esp': 'Crear y editar categorías personalizadas',
       'eng': 'Create and edit custom categories',
     },
-    'addPaymentOnCreate': {
+    'addPaymentOnCreateSubscription': {
       'esp': 'Agregar pago al crear la suscripción',
-      'eng': 'Add payment on create subscription',
+      'eng': 'Add payment when creating subscription',
+    },
+    'addPaymentOnCreateRecurringPayment': {
+      'esp': 'Agregar pago al crear el pago recurrente',
+      'eng': 'Add payment when creating recurring payment',
     },
     'downloadExcelOrCsv': {
       'esp': 'Descargar en Excel o CSV',
@@ -552,6 +565,10 @@ class SimpleLocalization {
     'manageYourSubscription': {
       'esp': 'Gestiona tu suscripción',
       'eng': 'Manage your subscription',
+    },
+    'manageYourRecurringPayment': {
+      'esp': 'Gestiona tu pago recurrente',
+      'eng': 'Manage your recurring payment',
     },
     'pauseSubtitle': {
       'esp': 'Detener temporalmente',
@@ -643,6 +660,7 @@ class SimpleLocalization {
       'esp': 'Actualizar a Premium',
       'eng': 'Upgrade to Premium',
     },
+    'premiumRequired': {'esp': 'Premium Requerido', 'eng': 'Premium Required'},
     'accountsLimit': {
       'esp': 'Cuentas: {current} de {limit}',
       'eng': 'Accounts: {current} of {limit}',
@@ -660,6 +678,22 @@ class SimpleLocalization {
     'purchaseError': {
       'esp': 'Error al procesar la compra. Por favor intenta de nuevo.',
       'eng': 'Error processing purchase. Please try again.',
+    },
+    'purchasesNotAvailable': {
+      'esp': 'Las compras no están disponibles en este momento.',
+      'eng': 'Purchases are not available at this time.',
+    },
+    'productsNotFound': {
+      'esp': 'No se encontraron productos disponibles.',
+      'eng': 'No products found.',
+    },
+    'purchaseCanceled': {
+      'esp': 'La compra fue cancelada.',
+      'eng': 'Purchase was canceled.',
+    },
+    'processingPurchase': {
+      'esp': 'Procesando compra...',
+      'eng': 'Processing purchase...',
     },
     'selectPlan': {
       'esp': 'Selecciona tu plan Premium',
@@ -690,6 +724,7 @@ class SimpleLocalization {
       'esp': 'vence pronto. ¡No olvides pagarlo!',
       'eng': 'is due soon. Don\'t forget to pay it!',
     },
+    'paymentProcessed': {'esp': 'Pago Procesado', 'eng': 'Payment Processed'},
     'immediateNotifications': {
       'esp': 'Notificaciones Inmediatas',
       'eng': 'Immediate Notifications',
@@ -724,7 +759,292 @@ class SimpleLocalization {
       'eng': 'Support Information',
     },
     'appInfo': {'esp': 'Información de la App', 'eng': 'App Information'},
+    'appName': {'esp': 'CuidaTuPlata', 'eng': 'CuidaTuPlata'},
     'appVersion': {'esp': 'Versión', 'eng': 'Version'},
     'platform': {'esp': 'Plataforma', 'eng': 'Platform'},
+    'services': {'esp': 'Servicios', 'eng': 'Services'},
+    'recurringPayments': {
+      'esp': 'Pagos Recurrentes',
+      'eng': 'Recurring Payments',
+    },
+    'recurringPaymentsDescription': {
+      'esp': 'Gestiona facturas e ingresos recurrentes',
+      'eng': 'Manage recurring bills and income',
+    },
+    'addRecurringPayment': {
+      'esp': 'Agregar Pago Recurrente',
+      'eng': 'Add Recurring Payment',
+    },
+    'editRecurringPayment': {
+      'esp': 'Editar Pago Recurrente',
+      'eng': 'Edit Recurring Payment',
+    },
+    'recurringPaymentName': {'esp': 'Nombre', 'eng': 'Name'},
+    'recurringPaymentDescription': {
+      'esp': 'Descripción (opcional)',
+      'eng': 'Description (optional)',
+    },
+    'recurringPaymentAmount': {'esp': 'Monto', 'eng': 'Amount'},
+    'recurringPaymentType': {'esp': 'Tipo de pago', 'eng': 'Payment type'},
+    'recurringPaymentCategory': {'esp': 'Categoría', 'eng': 'Category'},
+    'recurringPaymentFrequency': {'esp': 'Frecuencia', 'eng': 'Frequency'},
+    'dayOfMonth': {'esp': 'Día del mes', 'eng': 'Day of month'},
+    'dayOfMonthHint': {
+      'esp': 'Día en que se realiza el pago (1-31)',
+      'eng': 'Day when payment is made (1-31)',
+    },
+    'recurringPaymentCreated': {
+      'esp': 'Pago recurrente creado correctamente',
+      'eng': 'Recurring payment created successfully',
+    },
+    'recurringPaymentUpdated': {
+      'esp': 'Pago recurrente actualizado correctamente',
+      'eng': 'Recurring payment updated successfully',
+    },
+    'recurringPaymentDeleted': {
+      'esp': 'Pago recurrente eliminado correctamente',
+      'eng': 'Recurring payment deleted successfully',
+    },
+    'recurringPaymentNameRequired': {
+      'esp': 'El nombre es obligatorio',
+      'eng': 'Name is required',
+    },
+    'recurringPaymentAmountRequired': {
+      'esp': 'El monto es obligatorio',
+      'eng': 'Amount is required',
+    },
+    'recurringPaymentCategoryRequired': {
+      'esp': 'La categoría es obligatoria',
+      'eng': 'Category is required',
+    },
+    'selectRecurringPaymentType': {
+      'esp': 'Selecciona el tipo de pago',
+      'eng': 'Select payment type',
+    },
+    'selectRecurringPaymentCategory': {
+      'esp': 'Selecciona una categoría',
+      'eng': 'Select a category',
+    },
+    'noRecurringPayments': {
+      'esp': 'No hay pagos recurrentes',
+      'eng': 'No recurring payments',
+    },
+    'addFirstRecurringPayment': {
+      'esp': 'Agrega tu primer pago recurrente',
+      'eng': 'Add your first recurring payment',
+    },
+    'noRecurringExpenses': {
+      'esp': 'No hay gastos recurrentes',
+      'eng': 'No recurring expenses',
+    },
+    'addFirstRecurringExpense': {
+      'esp': 'Agrega tu primer gasto recurrente',
+      'eng': 'Add your first recurring expense',
+    },
+    'noRecurringIncome': {
+      'esp': 'No hay ingresos recurrentes',
+      'eng': 'No recurring income',
+    },
+    'addFirstRecurringIncome': {
+      'esp': 'Agrega tu primer ingreso recurrente',
+      'eng': 'Add your first recurring income',
+    },
+    'searchRecurringPayments': {
+      'esp': 'Buscar pagos recurrentes...',
+      'eng': 'Search recurring payments...',
+    },
+    'deleteRecurringPayment': {
+      'esp': 'Eliminar Pago Recurrente',
+      'eng': 'Delete Recurring Payment',
+    },
+    'deleteRecurringPaymentConfirm': {
+      'esp': '¿Estás seguro de que quieres eliminar "{name}"?',
+      'eng': 'Are you sure you want to delete "{name}"?',
+    },
+    'dueSoon': {'esp': 'Próximo', 'eng': 'Due Soon'},
+    'moreNotificationsOptions': {
+      'esp': 'Más opciones de notificaciones',
+      'eng': 'More notification options',
+    },
+    'advancedReminderOptionsPremium': {
+      'esp':
+          'Las opciones avanzadas de recordatorios están disponibles para usuarios Premium. Actualiza a Premium para personalizar tus preferencias de recordatorios.',
+      'eng':
+          'Advanced reminder options are available for Premium users. Upgrade to Premium to customize your reminder preferences.',
+    },
+    'dataExportPremiumFeature': {
+      'esp':
+          'La exportación de datos es una función Premium. Actualiza a Premium para exportar tus transacciones en formato Excel o CSV.',
+      'eng':
+          'Data export is a Premium feature. Upgrade to Premium to export your transactions to Excel or CSV format.',
+    },
+    'productNotAvailable': {
+      'esp': 'Este producto no está disponible. Por favor intenta más tarde.',
+      'eng': 'This product is not available. Please try again later.',
+    },
+    'paymentMethodInvalid': {
+      'esp':
+          'El método de pago no es válido. Por favor verifica tu información de pago.',
+      'eng':
+          'Payment method is invalid. Please check your payment information.',
+    },
+    'purchaseServiceUnavailable': {
+      'esp':
+          'El servicio de compras no está disponible temporalmente. Por favor intenta más tarde.',
+      'eng':
+          'Purchase service is temporarily unavailable. Please try again later.',
+    },
+    'networkErrorCheckConnection': {
+      'esp':
+          'Error de conexión. Por favor verifica tu conexión a internet e intenta de nuevo.',
+      'eng':
+          'Network error. Please check your internet connection and try again.',
+    },
+    'purchaseIssueContactSupport': {
+      'esp':
+          'Hubo un problema con la compra. Por favor contacta soporte si esto continúa.',
+      'eng':
+          'There was an issue with the purchase. Please contact support if this continues.',
+    },
+    'noTransactionsToExport': {
+      'esp': 'No hay transacciones para exportar',
+      'eng': 'No transactions to export',
+    },
+    'exportToExcelFormat': {
+      'esp': 'Exportar en formato Excel',
+      'eng': 'Export to Excel format',
+    },
+    'exportToCsvFormat': {
+      'esp': 'Exportar en formato CSV',
+      'eng': 'Export to CSV format',
+    },
+    'fileExportedSuccessfully': {
+      'esp': '¡Archivo exportado exitosamente!',
+      'eng': 'File exported successfully!',
+    },
+    'whatWouldYouLikeToDoWithFile': {
+      'esp': '¿Qué deseas hacer con el archivo?',
+      'eng': 'What would you like to do with the file?',
+    },
+    'saveLocation': {'esp': 'Ubicación de guardado:', 'eng': 'Save location:'},
+    'share': {'esp': 'Compartir', 'eng': 'Share'},
+    'saveToDownloads': {
+      'esp': 'Guardar en Descargas',
+      'eng': 'Save to Downloads',
+    },
+    'fileSavedSuccessfully': {
+      'esp': '¡Archivo guardado exitosamente!',
+      'eng': 'File saved successfully!',
+    },
+    'locationDownloads': {
+      'esp': 'Ubicación: Descargas/{fileName}',
+      'eng': 'Location: Downloads/{fileName}',
+    },
+    'errorSavingFileToDownloads': {
+      'esp': 'Error al guardar archivo en Descargas',
+      'eng': 'Error saving file to Downloads',
+    },
+    'transactionsExportedSuccessfully': {
+      'esp': '¡Transacciones exportadas exitosamente!',
+      'eng': 'Transactions exported successfully!',
+    },
+    'errorExportingTransactions': {
+      'esp': 'Error al exportar transacciones',
+      'eng': 'Error exporting transactions',
+    },
+    'faqHowAddTransaction': {
+      'esp': '¿Cómo agrego una transacción?',
+      'eng': 'How do I add a transaction?',
+    },
+    'faqHowAddTransactionAnswer': {
+      'esp':
+          'Toca el botón + en la pantalla de inicio para agregar una nueva transacción. Selecciona el tipo (ingreso o gasto), ingresa el monto, elige una categoría y guarda.',
+      'eng':
+          'Tap the + button on the dashboard screen to add a new transaction. Select the type (income or expense), enter the amount, choose a category, and save.',
+    },
+    'faqHowManageCategories': {
+      'esp': '¿Cómo gestiono las categorías?',
+      'eng': 'How do I manage categories?',
+    },
+    'faqHowManageCategoriesAnswer': {
+      'esp':
+          'Ve a Configuración > Gestión > Gestionar Categorías. Puedes crear, editar y eliminar categorías personalizadas. Las categorías por defecto se pueden restaurar en cualquier momento.',
+      'eng':
+          'Go to Settings > Management > Manage Categories. You can create, edit, and delete custom categories. Default categories can be restored at any time.',
+    },
+    'faqHowSubscriptionsWork': {
+      'esp': '¿Cómo funcionan las suscripciones?',
+      'eng': 'How do subscriptions work?',
+    },
+    'faqHowSubscriptionsWorkAnswer': {
+      'esp':
+          'Las suscripciones te permiten rastrear pagos recurrentes. Establece la frecuencia, el monto y la fecha del próximo pago. Recibirás recordatorios antes de que venza el pago.',
+      'eng':
+          'Subscriptions allow you to track recurring payments. Set the frequency, amount, and next payment date. You\'ll receive reminders before the payment is due.',
+    },
+    'faqWhatIsPremium': {
+      'esp': '¿Qué es la versión premium?',
+      'eng': 'What is the premium version?',
+    },
+    'faqWhatIsPremiumAnswer': {
+      'esp':
+          'La versión premium elimina los anuncios, proporciona soporte prioritario y permite cuentas ilimitadas. Puedes comprarla mensualmente o anualmente con descuento.',
+      'eng':
+          'The premium version removes ads, provides priority support, and allows unlimited accounts. You can purchase it monthly or annually with a discount.',
+    },
+    'faqHowSetMonthlyLimit': {
+      'esp': '¿Cómo establezco un límite de gastos mensual?',
+      'eng': 'How do I set a monthly expense limit?',
+    },
+    'faqHowSetMonthlyLimitAnswer': {
+      'esp':
+          'Ve a Configuración > Configuración Financiera > Límite de Gastos Mensual. Ingresa tu límite deseado y la app rastreará tus gastos comparándolos con él.',
+      'eng':
+          'Go to Settings > Financial Settings > Monthly Expense Limit. Enter your desired limit, and the app will track your spending against it.',
+    },
+    'faqCanUseMultipleAccounts': {
+      'esp': '¿Puedo usar múltiples cuentas?',
+      'eng': 'Can I use multiple accounts?',
+    },
+    'faqCanUseMultipleAccountsAnswer': {
+      'esp':
+          '¡Sí! Puedes crear y cambiar entre múltiples cuentas. Cada cuenta tiene sus propias transacciones, suscripciones y balance. Los usuarios premium pueden tener cuentas ilimitadas.',
+      'eng':
+          'Yes! You can create and switch between multiple accounts. Each account has its own transactions, subscriptions, and balance. Premium users can have unlimited accounts.',
+    },
+    'faqHowNotificationsWork': {
+      'esp': '¿Cómo funcionan las notificaciones?',
+      'eng': 'How do notifications work?',
+    },
+    'faqHowNotificationsWorkAnswer': {
+      'esp':
+          'Habilita las notificaciones en Configuración > Notificaciones. Recibirás recordatorios para los pagos de suscripciones antes de que venzan. Puedes configurar con cuántos días de anticipación quieres ser notificado.',
+      'eng':
+          'Enable notifications in Settings > Notifications. You\'ll receive reminders for subscription payments before they\'re due. You can configure how many days in advance you want to be notified.',
+    },
+    'supportResponseTime': {
+      'esp':
+          'Normalmente respondemos en 24-48 horas. Para asuntos urgentes, por favor menciona "URGENTE" en el asunto.',
+      'eng':
+          'We typically respond within 24-48 hours. For urgent matters, please mention "URGENT" in the subject line.',
+    },
+    'emailInfoCopied': {
+      'esp':
+          'Información del email copiada. Por favor pégalo en tu cliente de email.',
+      'eng': 'Email information copied. Please paste it in your email client.',
+    },
+    'supportRequestSubject': {
+      'esp': 'Solicitud de Soporte - CuidaTuPlata',
+      'eng': 'Support Request - CuidaTuPlata',
+    },
+    'supportEmailBody': {
+      'esp': 'Hola,\n\nNecesito ayuda con:\n\n\n\nVersión de la App: {version}',
+      'eng': 'Hello,\n\nI need help with:\n\n\n\nApp Version: {version}',
+    },
+    'frequencyShortDay': {'esp': 'Día', 'eng': 'Day'},
+    'frequencyShortWeek': {'esp': 'Sem', 'eng': 'Week'},
+    'frequencyShortMonth': {'esp': 'Mes', 'eng': 'Month'},
+    'frequencyShortQuarter': {'esp': 'Trim', 'eng': 'Qtr'},
+    'frequencyShortYear': {'esp': 'Año', 'eng': 'Year'},
   };
 }
