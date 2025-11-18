@@ -1013,6 +1013,41 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     '• ${SimpleLocalization.getText(ref, 'moreNotificationsOptions')}',
                   ),
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      try {
+                        final premiumService = ref.read(premiumServiceProvider);
+                        await premiumService.restorePurchases();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                SimpleLocalization.getText(
+                                  ref,
+                                  'purchasesRestored',
+                                ),
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: Text(
+                      SimpleLocalization.getText(ref, 'restorePurchases'),
+                    ),
+                  ),
                 ],
               ],
             );
@@ -1040,6 +1075,36 @@ class SettingsScreen extends ConsumerWidget {
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(height: 24),
+        OutlinedButton.icon(
+          onPressed: () async {
+            try {
+              final premiumService = ref.read(premiumServiceProvider);
+              await premiumService.restorePurchases();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      SimpleLocalization.getText(ref, 'purchasesRestored'),
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+          icon: const Icon(Icons.refresh),
+          label: Text(SimpleLocalization.getText(ref, 'restorePurchases')),
         ),
       ],
     );

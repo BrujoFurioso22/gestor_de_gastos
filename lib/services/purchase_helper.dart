@@ -24,6 +24,9 @@ class PurchaseHelper {
         if (purchase.pendingCompletePurchase) {
           await inAppPurchase.completePurchase(purchase);
           debugPrint('Compra finalizada: ${purchase.productID}');
+        } else {
+          // La compra ya está completada (por ejemplo, al restaurar compras)
+          debugPrint('Compra ya completada: ${purchase.productID}');
         }
       } else if (purchase.status == PurchaseStatus.error) {
         debugPrint('Error en compra: ${purchase.error?.message}');

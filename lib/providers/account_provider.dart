@@ -54,7 +54,7 @@ class AccountNotifier extends StateNotifier<List<Account>> {
     return state.length < freeAccountLimit;
   }
 
-  Future<void> addAccount(String name, double initialBalance) async {
+  Future<Account> addAccount(String name, double initialBalance) async {
     final account = Account(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
@@ -63,6 +63,7 @@ class AccountNotifier extends StateNotifier<List<Account>> {
 
     await HiveService.addAccount(account);
     state = HiveService.getAllAccounts();
+    return account;
   }
 
   Future<void> updateAccount(Account account) async {

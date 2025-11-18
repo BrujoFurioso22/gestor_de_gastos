@@ -39,6 +39,18 @@ class PremiumService {
     await _inAppPurchase.restorePurchases();
   }
 
+  /// Verifica las compras activas y las restaura
+  /// Esto debe llamarse al iniciar la app para sincronizar el estado premium
+  Future<void> verifyActivePurchases() async {
+    try {
+      // Restaurar compras para obtener las compras activas de Google Play
+      await restorePurchases();
+    } catch (e) {
+      // Silenciar errores de verificación, no es crítico si falla
+      // El stream de compras seguirá funcionando
+    }
+  }
+
   /// Escucha las actualizaciones de compras
   Stream<List<PurchaseDetails>> get purchaseUpdates =>
       _inAppPurchase.purchaseStream;

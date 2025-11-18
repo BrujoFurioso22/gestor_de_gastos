@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import '../providers/admob_provider.dart';
 import '../services/admob_service.dart';
+import '../services/premium_service.dart';
+import '../services/purchase_helper.dart';
 import '../services/simple_localization.dart';
 import 'dashboard_screen.dart';
 import 'history_screen.dart';
@@ -23,6 +27,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   BannerAd? _bannerAd;
   bool _isBannerAdLoaded = false;
   bool _isInitializingAds = false;
+  StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
 
   final List<Widget> _screens = [
     const DashboardScreen(),
@@ -36,6 +41,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     super.initState();
     _initializeAds();
     _handleAppOpen();
+    _initializePremiumVerification();
   }
 
   /// Inicializa los anuncios
@@ -68,8 +74,35 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     await ref.read(adMobStateProvider.notifier).checkAndShowInterstitialAd();
   }
 
+  /// Inicializa la verificación de compras premium
+  Future<void> _initializePremiumVerification() async {
+    try {
+      final premiumService = ref.read(premiumServiceProvider);
+      
+      // Configurar listener permanente del stream de compras
+      _purchaseSubscription = premiumService.purchaseUpdates.listen(
+        (purchases) async {
+          // Procesar todas las compras recibidas
+          for (final purchase in purchases) {
+            await PurchaseHelper.processPurchase(purchase, ref);
+          }
+        },
+        onError: (error) {
+          debugPrint('Error en stream de compras: $error');
+        },
+      );
+
+      // Verificar compras activas al iniciar la app
+      // Esto sincroniza el estado premium con Google Play
+      await premiumService.verifyActivePurchases();
+    } catch (e) {
+      debugPrint('Error inicializando verificación premium: $e');
+    }
+  }
+
   @override
   void dispose() {
+    _purchaseSubscription?.cancel();
     _bannerAd?.dispose();
     _bannerAd = null;
     _isBannerAdLoaded = false;

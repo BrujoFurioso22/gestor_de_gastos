@@ -31,6 +31,16 @@ class AccountSelector extends ConsumerWidget {
       orElse: () => accounts.first,
     );
 
+    // Si currentAccountId es null o no existe en las cuentas, actualizarlo automáticamente
+    if (currentAccountId == null ||
+        !accounts.any((account) => account.id == currentAccountId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(appConfigProvider.notifier)
+            .updateCurrentAccountId(currentAccount.id);
+      });
+    }
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -101,129 +111,151 @@ class AccountSelector extends ConsumerWidget {
     WidgetRef ref,
     List<Account> accounts,
   ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: HugeIcon(
-                            icon: HugeIconsStrokeRounded.money01,
-                            size: 20,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          SimpleLocalization.getText(ref, 'accounts'),
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, child) {
+          final accounts = ref.watch(accountProvider);
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
+
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(
+                        0.3,
                       ),
-                      onPressed: () {
-                        FeedbackService.buttonFeedback(ref);
-                        Navigator.pop(context);
-                        _showAddAccountDialog(context, ref);
-                      },
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              // Lista de cuentas
-              Flexible(
-                child: accounts.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(40),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Icon(
-                              Icons.account_circle_outlined,
-                              size: 64,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No hay cuentas',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: theme.colorScheme.onSurfaceVariant,
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              textAlign: TextAlign.center,
+                              child: HugeIcon(
+                                icon: HugeIconsStrokeRounded.money01,
+                                size: 20,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              SimpleLocalization.getText(ref, 'accounts'),
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
                           ],
                         ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: accounts.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final account = accounts[index];
-                          final isCurrent =
-                              account.id ==
-                              ref.read(appConfigProvider).currentAccountId;
+                        IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          onPressed: () {
+                            FeedbackService.buttonFeedback(ref);
+                            // Cerrar el diálogo actual de forma segura
+                            if (Navigator.of(dialogContext).canPop()) {
+                              Navigator.of(dialogContext).pop();
+                            }
+                            // Usar un pequeño delay para asegurar que el diálogo se cierre antes de mostrar el bottom sheet
+                            Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () {
+                                if (dialogContext.mounted) {
+                                  _showAddAccountDialog(dialogContext, ref);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Lista de cuentas
+                  Flexible(
+                    child: accounts.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(40),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.account_circle_outlined,
+                                  size: 64,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No hay cuentas',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: accounts.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final account = accounts[index];
+                              final isCurrent =
+                                  account.id ==
+                                  ref.read(appConfigProvider).currentAccountId;
 
-                          return _buildAccountCard(
-                            context,
-                            ref,
-                            account,
-                            isCurrent,
-                            theme,
-                            isDark,
-                          );
-                        },
-                      ),
+                              return _buildAccountCard(
+                                dialogContext,
+                                ref,
+                                account,
+                                isCurrent,
+                                theme,
+                                isDark,
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -349,9 +381,36 @@ class AccountSelector extends ConsumerWidget {
                             );
 
                             if (confirm == true) {
+                              final currentAccountId = ref
+                                  .read(appConfigProvider)
+                                  .currentAccountId;
+                              final isDeletingCurrent =
+                                  account.id == currentAccountId;
+
                               await ref
                                   .read(accountProvider.notifier)
                                   .deleteAccount(account.id);
+
+                              // Si se eliminó la cuenta actual, cambiar a otra cuenta
+                              if (isDeletingCurrent) {
+                                final remainingAccounts = ref.read(
+                                  accountProvider,
+                                );
+                                if (remainingAccounts.isNotEmpty) {
+                                  await ref
+                                      .read(appConfigProvider.notifier)
+                                      .updateCurrentAccountId(
+                                        remainingAccounts.first.id,
+                                      );
+                                }
+                              }
+
+                              // Refrescar los providers
+                              ref.read(transactionsProvider.notifier).refresh();
+                              ref
+                                  .read(subscriptionsProvider.notifier)
+                                  .refresh();
+
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -438,96 +497,121 @@ class AccountSelector extends ConsumerWidget {
     final nameController = TextEditingController();
     final balanceController = TextEditingController();
 
-    // Cerrar el diálogo anterior
-    Navigator.pop(context);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                SimpleLocalization.getText(ref, 'newAccount'),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+      barrierColor: Colors.black.withOpacity(0.5),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (bottomSheetContext) => Consumer(
+        builder: (context, ref, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: SimpleLocalization.getText(ref, 'accountName'),
-                  hintText: 'Ej: Cuenta Principal',
-                  border: const OutlineInputBorder(),
-                ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: balanceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: SimpleLocalization.getText(ref, 'initialBalance'),
-                  hintText: 'Ej: 1000.00',
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(SimpleLocalization.getText(ref, 'cancel')),
+                  Text(
+                    SimpleLocalization.getText(ref, 'newAccount'),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final name = nameController.text;
-                      final balance =
-                          double.tryParse(balanceController.text) ?? 0.0;
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: SimpleLocalization.getText(ref, 'accountName'),
+                      hintText: 'Ej: Cuenta Principal',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: balanceController,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: SimpleLocalization.getText(
+                        ref,
+                        'initialBalance',
+                      ),
+                      hintText: 'Ej: 1000.00',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(bottomSheetContext),
+                        child: Text(SimpleLocalization.getText(ref, 'cancel')),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final name = nameController.text;
+                          final balance =
+                              double.tryParse(balanceController.text) ?? 0.0;
 
-                      if (name.isNotEmpty) {
-                        Navigator.pop(context);
-                        await ref
-                            .read(accountProvider.notifier)
-                            .addAccount(name, balance);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                SimpleLocalization.getText(ref, 'accountAdded'),
-                              ),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: Text(SimpleLocalization.getText(ref, 'add')),
+                          if (name.isNotEmpty) {
+                            Navigator.pop(bottomSheetContext);
+                            // Añadir la cuenta y obtener la cuenta creada
+                            final newAccount = await ref
+                                .read(accountProvider.notifier)
+                                .addAccount(name, balance);
+
+                            // Actualizar la cuenta actual a la nueva cuenta
+                            await ref
+                                .read(appConfigProvider.notifier)
+                                .updateCurrentAccountId(newAccount.id);
+
+                            // Refrescar los providers
+                            ref.read(transactionsProvider.notifier).refresh();
+                            ref.read(subscriptionsProvider.notifier).refresh();
+
+                            if (bottomSheetContext.mounted) {
+                              ScaffoldMessenger.of(
+                                bottomSheetContext,
+                              ).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    SimpleLocalization.getText(
+                                      ref,
+                                      'accountAdded',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: Text(SimpleLocalization.getText(ref, 'add')),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -545,84 +629,101 @@ class AccountSelector extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${SimpleLocalization.getText(ref, 'editBalance')}: ${account.name}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+      barrierColor: Colors.black.withOpacity(0.5),
+      isDismissible: true,
+      enableDrag: true,
+      builder: (bottomSheetContext) => Consumer(
+        builder: (context, ref, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-              const SizedBox(height: 16),
-              Text(
-                SimpleLocalization.getText(ref, 'balanceReferenceInfo'),
-                textAlign: TextAlign.center,
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: balanceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: SimpleLocalization.getText(ref, 'initialBalance'),
-                  hintText: 'Ej: 1500.00',
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(SimpleLocalization.getText(ref, 'cancel')),
+                  Text(
+                    '${SimpleLocalization.getText(ref, 'editBalance')}: ${account.name}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final balance =
-                          double.tryParse(balanceController.text) ?? 0.0;
+                  const SizedBox(height: 16),
+                  Text(
+                    SimpleLocalization.getText(ref, 'balanceReferenceInfo'),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: balanceController,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: SimpleLocalization.getText(
+                        ref,
+                        'initialBalance',
+                      ),
+                      hintText: 'Ej: 1500.00',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(bottomSheetContext),
+                        child: Text(SimpleLocalization.getText(ref, 'cancel')),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final balance =
+                              double.tryParse(balanceController.text) ?? 0.0;
 
-                      await ref
-                          .read(accountProvider.notifier)
-                          .updateAccount(
-                            account.copyWith(initialBalance: balance),
-                          );
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              SimpleLocalization.getText(ref, 'balanceUpdated'),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text(SimpleLocalization.getText(ref, 'update')),
+                          await ref
+                              .read(accountProvider.notifier)
+                              .updateAccount(
+                                account.copyWith(initialBalance: balance),
+                              );
+                          if (bottomSheetContext.mounted) {
+                            Navigator.pop(bottomSheetContext);
+                            ScaffoldMessenger.of(
+                              bottomSheetContext,
+                            ).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  SimpleLocalization.getText(
+                                    ref,
+                                    'balanceUpdated',
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(SimpleLocalization.getText(ref, 'update')),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

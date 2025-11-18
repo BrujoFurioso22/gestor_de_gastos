@@ -695,6 +695,14 @@ class SimpleLocalization {
       'esp': 'Procesando compra...',
       'eng': 'Processing purchase...',
     },
+    'restorePurchases': {
+      'esp': 'Verificar Suscripción',
+      'eng': 'Verify Subscription',
+    },
+    'purchasesRestored': {
+      'esp': 'Suscripción verificada correctamente',
+      'eng': 'Subscription verified successfully',
+    },
     'selectPlan': {
       'esp': 'Selecciona tu plan Premium',
       'eng': 'Select your Premium plan',
