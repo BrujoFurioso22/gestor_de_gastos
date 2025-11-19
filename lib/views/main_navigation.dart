@@ -78,7 +78,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   Future<void> _initializePremiumVerification() async {
     try {
       final premiumService = ref.read(premiumServiceProvider);
-      
+
       // Configurar listener permanente del stream de compras
       _purchaseSubscription = premiumService.purchaseUpdates.listen(
         (purchases) async {
@@ -88,15 +88,19 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
           }
         },
         onError: (error) {
-          debugPrint('Error en stream de compras: $error');
+          // Silenciar errores del stream
         },
       );
 
       // Verificar compras activas al iniciar la app
       // Esto sincroniza el estado premium con Google Play
       await premiumService.verifyActivePurchases();
+
+      // Dar un pequeño delay para que las compras lleguen al stream
+      // Google Play puede tardar unos segundos en responder
+      await Future.delayed(const Duration(seconds: 2));
     } catch (e) {
-      debugPrint('Error inicializando verificación premium: $e');
+      // Silenciar errores de inicialización
     }
   }
 

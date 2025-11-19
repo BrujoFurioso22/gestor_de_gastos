@@ -1058,25 +1058,97 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildPremiumActiveContent(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.verified,
-          size: 48,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
-        Text(SimpleLocalization.getText(ref, 'premiumActive')),
-        const SizedBox(height: 8),
-        Text(
-          SimpleLocalization.getText(ref, 'unlockPremiumFeatures'),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        // Badge de Premium Activo
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.primary.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.verified, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                SimpleLocalization.getText(ref, 'premiumActive'),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
+
+        // Título de funciones premium
+        Text(
+          SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Lista de funciones premium
+        _buildPremiumFeatureItem(
+          context,
+          ref,
+          Icons.block,
+          SimpleLocalization.getText(ref, 'noAds'),
+        ),
+        const SizedBox(height: 12),
+        _buildPremiumFeatureItem(
+          context,
+          ref,
+          Icons.support_agent,
+          SimpleLocalization.getText(ref, 'prioritySupport'),
+        ),
+        const SizedBox(height: 12),
+        _buildPremiumFeatureItem(
+          context,
+          ref,
+          Icons.account_circle,
+          SimpleLocalization.getText(ref, 'unlimitedAccounts'),
+        ),
+        const SizedBox(height: 12),
+        _buildPremiumFeatureItem(
+          context,
+          ref,
+          Icons.download,
+          SimpleLocalization.getText(ref, 'exportTransactions'),
+        ),
+        const SizedBox(height: 12),
+        _buildPremiumFeatureItem(
+          context,
+          ref,
+          Icons.notifications_active,
+          SimpleLocalization.getText(ref, 'moreNotificationsOptions'),
+        ),
+        const SizedBox(height: 24),
+
+        // Botón de verificar suscripción
         OutlinedButton.icon(
           onPressed: () async {
             try {
@@ -1106,6 +1178,35 @@ class SettingsScreen extends ConsumerWidget {
           icon: const Icon(Icons.refresh),
           label: Text(SimpleLocalization.getText(ref, 'restorePurchases')),
         ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumFeatureItem(
+    BuildContext context,
+    WidgetRef ref,
+    IconData icon,
+    String text,
+  ) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
+          ),
+        ),
+        Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20),
       ],
     );
   }

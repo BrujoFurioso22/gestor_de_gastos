@@ -43,7 +43,16 @@ class PremiumService {
   /// Esto debe llamarse al iniciar la app para sincronizar el estado premium
   Future<void> verifyActivePurchases() async {
     try {
+      // Verificar disponibilidad
+      final purchasesAvailable = await isAvailable();
+
+      if (!purchasesAvailable) {
+        return;
+      }
+
       // Restaurar compras para obtener las compras activas de Google Play
+      // Las compras restauradas llegarán a través del stream purchaseUpdates
+      // El listener en main_navigation.dart las procesará automáticamente
       await restorePurchases();
     } catch (e) {
       // Silenciar errores de verificación, no es crítico si falla
