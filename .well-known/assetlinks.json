@@ -1,0 +1,15 @@
+[
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.cuidatuplata.app",
+        "sha256_cert_fingerprints": [
+          "B8:35:0E:1F:A1:80:02:48:EF:BC:81:63:02:03:96:5B:53:3C:1D:57:34:A7:62:D5:D3:2F:A1:78:7B:8D:47:BC"
+        ]
+      }
+    }
+  ]
