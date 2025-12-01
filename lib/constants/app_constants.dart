@@ -11,6 +11,11 @@ class AppConstants {
   static const String adMobInterstitialId =
       'ca-app-pub-2227324033270179/1507321696'; // Interstitial real (Android)
 
+  // IDs de prueba de AdMob (usar en desarrollo)
+  static const String adMobTestAppId = 'ca-app-pub-3940256099942544~3347511713';
+  static const String adMobTestBannerId = 'ca-app-pub-3940256099942544/6300978111';
+  static const String adMobTestInterstitialId = 'ca-app-pub-3940256099942544/1033173712';
+
   // Configuración de anuncios
   static const int adFrequency = 5; // Mostrar anuncio cada 5 aperturas
   static const Duration adCooldown = Duration(
