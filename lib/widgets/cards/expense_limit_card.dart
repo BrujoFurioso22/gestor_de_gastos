@@ -58,112 +58,106 @@ class ExpenseLimitCard extends ConsumerWidget {
       backgroundColor = Colors.green.withOpacity(0.1);
     }
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-          gradient: LinearGradient(
-            colors: [backgroundColor, backgroundColor.withOpacity(0.3)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: backgroundColor,
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: progressColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: HugeIcon(
-                    icon: HugeIconsStrokeRounded.money01,
-                    color: progressColor,
-                    size: 24,
-                  ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: progressColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        SimpleLocalization.getText(ref, 'monthlyExpenseLimit'),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        percentage >= 1.0
-                            ? SimpleLocalization.getText(ref, 'limitExceeded')
-                            : '${SimpleLocalization.getText(ref, 'remaining')} ${_formatCurrency(remaining, ref)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: HugeIcon(
+                  icon: HugeIconsStrokeRounded.money01,
+                  color: progressColor,
+                  size: 24,
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Barra de progreso
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _formatCurrency(monthlyExpenses, ref),
-                      style: theme.textTheme.bodyLarge?.copyWith(
+                      SimpleLocalization.getText(ref, 'monthlyExpenseLimit'),
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: progressColor,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      '${SimpleLocalization.getText(ref, 'of')} ${_formatCurrency(monthlyLimit, ref)}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      percentage >= 1.0
+                          ? SimpleLocalization.getText(ref, 'limitExceeded')
+                          : '${SimpleLocalization.getText(ref, 'remaining')} ${_formatCurrency(remaining, ref)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: percentage.clamp(0.0, 1.0),
-                    minHeight: 12,
-                    backgroundColor: progressColor.withOpacity(0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Barra de progreso
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatCurrency(monthlyExpenses, ref),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: progressColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(percentage * 100).toStringAsFixed(1)}% ${SimpleLocalization.getText(ref, 'used')}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+                  Text(
+                    '${SimpleLocalization.getText(ref, 'of')} ${_formatCurrency(monthlyLimit, ref)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: percentage.clamp(0.0, 1.0),
+                  minHeight: 12,
+                  backgroundColor: progressColor.withOpacity(0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${(percentage * 100).toStringAsFixed(1)}% ${SimpleLocalization.getText(ref, 'used')}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

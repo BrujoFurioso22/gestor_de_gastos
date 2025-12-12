@@ -26,87 +26,87 @@ class BalanceCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withOpacity(0.8),
-                  ]
-                : [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primaryContainer,
-                  ],
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.8),
+                ]
+              : [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primaryContainer,
+                ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      SimpleLocalization.getText(ref, 'totalBalance'),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.9)
-                            : theme.colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    SimpleLocalization.getText(ref, 'totalBalance'),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.9)
+                          : theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                AppFormatters.formatAmountWithSign(balance, ref),
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  color: isDark ? Colors.white : theme.colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 36,
                 ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              AppFormatters.formatAmountWithSign(balance, ref),
+              style: theme.textTheme.headlineLarge?.copyWith(
+                color: isDark ? Colors.white : theme.colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 36,
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      ref,
-                      SimpleLocalization.getText(ref, 'income'),
-                      totalIncome,
-                      HugeIconsStrokeRounded.arrowUp01,
-                      Colors.green.shade700,
-                      TransactionType.income,
-                      isDark,
-                    ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    context,
+                    ref,
+                    SimpleLocalization.getText(ref, 'income'),
+                    totalIncome,
+                    HugeIconsStrokeRounded.arrowUp01,
+                    Colors.green.shade700,
+                    TransactionType.income,
+                    isDark,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      ref,
-                      SimpleLocalization.getText(ref, 'expenses'),
-                      totalExpenses,
-                      HugeIconsStrokeRounded.arrowDown01,
-                      Colors.red.shade700,
-                      TransactionType.expense,
-                      isDark,
-                    ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStatItem(
+                    context,
+                    ref,
+                    SimpleLocalization.getText(ref, 'expenses'),
+                    totalExpenses,
+                    HugeIconsStrokeRounded.arrowDown01,
+                    Colors.red.shade700,
+                    TransactionType.expense,
+                    isDark,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -129,23 +129,20 @@ class BalanceCard extends ConsumerWidget {
         FeedbackService.buttonFeedback(ref);
         _showTransactionDialog(context, ref, transactionType);
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey.shade900 : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isDark
+              ? Colors.white.withOpacity(0.1)
+              : Colors.white.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+            color: isDark
+                ? Colors.white.withOpacity(0.2)
+                : Colors.white.withOpacity(0.4),
             width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
