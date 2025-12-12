@@ -16,15 +16,25 @@ class ServicesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(SimpleLocalization.getText(ref, 'services'))),
-      body: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: AppConstants.defaultPadding,
-          mainAxisSpacing: AppConstants.defaultPadding,
-          childAspectRatio: 0.65,
-          children: [
-            _buildServiceCard(
+      body: ListView.separated(
+        padding: EdgeInsets.only(
+          left: AppConstants.defaultPadding,
+          right: AppConstants.defaultPadding,
+          top: AppConstants.defaultPadding,
+          bottom:
+              AppConstants.defaultPadding +
+              MediaQuery.of(context).padding.bottom,
+        ),
+        itemCount: 2,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          color: theme.colorScheme.outline.withOpacity(0.2),
+          indent: 0,
+          endIndent: 0,
+        ),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _buildServiceListItem(
               context,
               theme,
               title: SimpleLocalization.getText(ref, 'subscriptions'),
@@ -39,8 +49,9 @@ class ServicesScreen extends ConsumerWidget {
                   ),
                 );
               },
-            ),
-            _buildServiceCard(
+            );
+          } else {
+            return _buildServiceListItem(
               context,
               theme,
               title: SimpleLocalization.getText(ref, 'recurringPayments'),
@@ -58,24 +69,14 @@ class ServicesScreen extends ConsumerWidget {
                   ),
                 );
               },
-            ),
-            // Espacio para futuros servicios
-            // _buildServiceCard(
-            //   context,
-            //   theme,
-            //   title: 'Nuevo Servicio',
-            //   subtitle: 'Descripción',
-            //   icon: HugeIconsStrokeRounded.icon,
-            //   color: theme.colorScheme.tertiary,
-            //   onTap: () {},
-            // ),
-          ],
-        ),
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildServiceCard(
+  Widget _buildServiceListItem(
     BuildContext context,
     ThemeData theme, {
     required String title,
@@ -84,77 +85,32 @@ class ServicesScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 0,
-      shadowColor: theme.colorScheme.primary.withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-          width: 1,
+    return Container(
+      color: theme.colorScheme.surface,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: HugeIcon(icon: icon, size: 24, color: color),
         ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Material(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: HugeIcon(icon: icon, size: 28, color: color),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 15,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
+        title: Text(
+          title,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
+        subtitle: Text(
+          subtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: HugeIcon(icon: HugeIconsStrokeRounded.arrowRight01, size: 20),
+        onTap: onTap,
       ),
     );
   }

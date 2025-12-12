@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/category_provider.dart';
@@ -150,8 +151,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
 
     return ListView.separated(
       padding: EdgeInsets.only(
-        bottom: AppConstants.defaultPadding +
-            MediaQuery.of(context).padding.bottom,
+        bottom:
+            AppConstants.defaultPadding + MediaQuery.of(context).padding.bottom,
       ),
       itemCount: sortedDays.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
@@ -220,9 +221,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
               ),
             ),
             // Transacciones del día
-            ...dayTransactions.map(
-              (transaction) => _buildTransactionItem(transaction),
-            ),
+            ...dayTransactions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final transaction = entry.value;
+              final isLast = index == dayTransactions.length - 1;
+              return Column(
+                children: [
+                  _buildTransactionItem(transaction),
+                  if (!isLast)
+                    Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.defaultPadding,
+                      ),
+                      height: 1,
+                      color: theme.colorScheme.outline.withOpacity(0.2),
+                    ),
+                ],
+              );
+            }),
           ],
         );
       },
@@ -266,183 +282,195 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     final theme = Theme.of(context);
     final isIncome = transaction.type == TransactionType.income;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
-        vertical: 4,
-      ),
-      child: ListTile(
-        leading: Consumer(
-          builder: (context, ref, child) {
-            final category = ref.watch(
-              categoryByIdProvider(transaction.category),
-            );
-            return Stack(
-              children: [
-                CircleAvatar(
-                  backgroundColor: category?.color != null
-                      ? Color(
-                          int.parse(category!.color.replaceFirst('#', '0xFF')),
-                        ).withOpacity(0.1)
-                      : theme.colorScheme.primaryContainer,
-                  child: category?.icon != null
-                      ? HugeIcon(
-                          icon: IconUtils.getIconFromString(category!.icon),
-                          color: Color(
-                            int.parse(category.color.replaceFirst('#', '0xFF')),
-                          ),
-                        )
-                      : HugeIcon(
-                          icon: isIncome
-                              ? HugeIconsStrokeRounded.money01
-                              : HugeIconsStrokeRounded.money01,
-                          color: theme.colorScheme.primary,
-                        ),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: isIncome
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.error,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: theme.colorScheme.surface,
-                        width: 2,
-                      ),
-                    ),
-                    child: Icon(
-                      isIncome ? Icons.add : Icons.remove,
-                      size: 10,
-                      color: theme.colorScheme.surface,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        title: Consumer(
-          builder: (context, ref, child) {
-            final category = ref.watch(
-              categoryByIdProvider(transaction.category),
-            );
-            final displayTitle =
-                transaction.title ??
-                category?.name ??
-                SimpleLocalization.getText(ref, 'noTitle');
-            return Text(
-              displayTitle,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          },
-        ),
-        subtitle: transaction.notes != null && transaction.notes!.isNotEmpty
-            ? Text(
-                transaction.notes!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            : null,
-        trailing: Consumer(
-          builder: (context, ref, child) {
-            final category = ref.watch(
-              categoryByIdProvider(transaction.category),
-            );
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  AppFormatters.formatAmountWithSign(
-                    isIncome ? transaction.amount : -transaction.amount,
-                    ref,
-                  ),
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: isIncome
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  category?.name ?? transaction.category,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        onTap: () {
-          _showEditTransactionDialog(transaction);
-        },
-        onLongPress: () {
-          _showDeleteDialog(transaction);
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Slidable(
+      key: Key(transaction.id),
+      groupTag: 'transactions',
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.2,
         children: [
-          HugeIcon(
-            icon: HugeIconsStrokeRounded.money01,
-            size: 64,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: AppConstants.defaultPadding),
-          Text(
-            SimpleLocalization.getText(ref, 'noTransactions'),
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          Text(
-            SimpleLocalization.getText(ref, 'addFirstTransaction'),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          SlidableAction(
+            onPressed: (_) => _handleDelete(transaction),
+            backgroundColor: theme.colorScheme.error,
+            foregroundColor: theme.colorScheme.onError,
+            icon: Icons.delete,
+            borderRadius: BorderRadius.zero,
           ),
         ],
       ),
-    );
-  }
-
-  void _showEditTransactionDialog(Transaction transaction) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppConstants.borderRadius),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppConstants.defaultPadding,
+        ),
+        color: theme.colorScheme.surface,
+        child: ListTile(
+          leading: Consumer(
+            builder: (context, ref, child) {
+              final category = ref.watch(
+                categoryByIdProvider(transaction.category),
+              );
+              return Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: category?.color != null
+                        ? Color(
+                            int.parse(
+                              category!.color.replaceFirst('#', '0xFF'),
+                            ),
+                          ).withOpacity(0.1)
+                        : theme.colorScheme.primaryContainer,
+                    child: category?.icon != null
+                        ? HugeIcon(
+                            icon: IconUtils.getIconFromString(category!.icon),
+                            size: 18,
+                            color: Color(
+                              int.parse(
+                                category.color.replaceFirst('#', '0xFF'),
+                              ),
+                            ),
+                          )
+                        : HugeIcon(
+                            icon: isIncome
+                                ? HugeIconsStrokeRounded.money01
+                                : HugeIconsStrokeRounded.money01,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: isIncome
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.error,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.colorScheme.surface,
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        isIncome ? Icons.add : Icons.remove,
+                        size: 10,
+                        color: theme.colorScheme.surface,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          title: Consumer(
+            builder: (context, ref, child) {
+              final category = ref.watch(
+                categoryByIdProvider(transaction.category),
+              );
+              final displayTitle =
+                  transaction.title ??
+                  category?.name ??
+                  SimpleLocalization.getText(ref, 'noTitle');
+              return Text(
+                displayTitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            },
+          ),
+          subtitle: transaction.notes != null && transaction.notes!.isNotEmpty
+              ? Text(
+                  transaction.notes!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : null,
+          trailing: Consumer(
+            builder: (context, ref, child) {
+              final category = ref.watch(
+                categoryByIdProvider(transaction.category),
+              );
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    AppFormatters.formatAmountWithSign(
+                      isIncome ? transaction.amount : -transaction.amount,
+                      ref,
+                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: isIncome
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    category?.name ?? transaction.category,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          onTap: () => _showEditTransactionDialog(transaction),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
         ),
       ),
-      builder: (context) => EditTransactionSheet(transaction: transaction),
     );
   }
 
-  void _showDeleteDialog(Transaction transaction) {
-    showDialog(
+  void _handleDelete(Transaction transaction) async {
+    final confirmed = await _showDeleteConfirmationDialog(transaction);
+    if (confirmed && context.mounted) {
+      // Guardar la transacción para poder restaurarla si el usuario deshace
+      final transactionToDelete = transaction;
+      // Eliminar la transacción
+      ref.read(transactionsProvider.notifier).deleteTransaction(transaction.id);
+
+      // Mostrar snackbar con opción de deshacer
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(SimpleLocalization.getText(ref, 'transactionDeleted')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: SimpleLocalization.getText(ref, 'undo'),
+            textColor: Theme.of(context).colorScheme.onError,
+            onPressed: () {
+              // Restaurar la transacción
+              ref
+                  .read(transactionsProvider.notifier)
+                  .addTransaction(transactionToDelete);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Muestra un diálogo de confirmación para eliminar
+  Future<bool> _showDeleteConfirmationDialog(Transaction transaction) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'deleteTransaction')),
+        title: Consumer(
+          builder: (context, ref, child) =>
+              Text(SimpleLocalization.getText(ref, 'deleteTransaction')),
+        ),
         content: Consumer(
           builder: (context, ref, child) {
             final category = ref.watch(
@@ -462,20 +490,73 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(SimpleLocalization.getText(ref, 'cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: Consumer(
+              builder: (context, ref, child) =>
+                  Text(SimpleLocalization.getText(ref, 'cancel')),
+            ),
           ),
           TextButton(
-            onPressed: () {
-              ref
-                  .read(transactionsProvider.notifier)
-                  .deleteTransaction(transaction.id);
-              Navigator.pop(context);
-            },
-            child: Text(SimpleLocalization.getText(ref, 'delete')),
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Consumer(
+              builder: (context, ref, child) =>
+                  Text(SimpleLocalization.getText(ref, 'delete')),
+            ),
           ),
         ],
       ),
+    );
+    return confirmed ?? false;
+  }
+
+  Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          HugeIcon(
+            icon: HugeIconsStrokeRounded.money01,
+            size: 64,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: AppConstants.defaultPadding),
+          Consumer(
+            builder: (context, ref, child) => Text(
+              SimpleLocalization.getText(ref, 'noTransactions'),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppConstants.smallPadding),
+          Consumer(
+            builder: (context, ref, child) => Text(
+              SimpleLocalization.getText(ref, 'addFirstTransaction'),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTransactionDialog(Transaction transaction) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppConstants.borderRadius),
+        ),
+      ),
+      builder: (context) => EditTransactionSheet(transaction: transaction),
     );
   }
 }

@@ -31,7 +31,7 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           SimpleLocalization.getText(ref, 'appTitle'),
-          style: TextStyle(
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),

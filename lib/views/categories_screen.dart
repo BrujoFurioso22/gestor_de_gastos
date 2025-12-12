@@ -219,7 +219,6 @@ class CategoriesScreen extends ConsumerWidget {
               SimpleLocalization.getText(ref, category.type.name),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 11,
               ),
             ),
           ],

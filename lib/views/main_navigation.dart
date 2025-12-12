@@ -157,18 +157,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             BottomNavigationBar(
               type: BottomNavigationBarType.fixed,
               currentIndex: _currentIndex,
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant,
-              selectedLabelStyle: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-              ),
               onTap: (index) {
                 setState(() {
                   _currentIndex = index;

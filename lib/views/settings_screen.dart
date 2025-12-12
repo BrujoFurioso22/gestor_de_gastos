@@ -23,6 +23,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../services/premium_service.dart';
 import '../services/purchase_helper.dart';
 import '../services/export_service.dart';
+import '../services/backup_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -170,7 +171,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección Visual
         _buildSection(
@@ -206,7 +207,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de Gestión
         _buildSection(context, SimpleLocalization.getText(ref, 'management'), [
@@ -232,38 +233,79 @@ class SettingsScreen extends ConsumerWidget {
 
         // Sección de Exportación
         _buildSection(context, SimpleLocalization.getText(ref, 'exportData'), [
-          ListTile(
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    SimpleLocalization.getText(ref, 'exportTransactions'),
-                  ),
+          Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              return ListTile(
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        SimpleLocalization.getText(ref, 'exportTransactions'),
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    if (!isPremium)
+                      HugeIcon(
+                        icon: HugeIconsStrokeRounded.star,
+                        size: 14,
+                        color: theme.colorScheme.primary,
+                      ),
+                  ],
                 ),
-                if (!isPremium)
-                  HugeIcon(
-                    icon: HugeIconsStrokeRounded.star,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
+                subtitle: Text(
+                  SimpleLocalization.getText(
+                    ref,
+                    'exportTransactionsDescription',
                   ),
-              ],
-            ),
-            subtitle: Text(
-              SimpleLocalization.getText(ref, 'exportTransactionsDescription'),
-            ),
-            leading: HugeIcon(
-              icon: HugeIconsStrokeRounded.downloadSquare02,
-              size: 20,
-            ),
-            trailing: HugeIcon(
-              icon: HugeIconsStrokeRounded.arrowRight01,
-              size: 20,
-            ),
-            onTap: () => _showExportDialog(context, ref),
+                  style: theme.textTheme.bodySmall,
+                ),
+                leading: HugeIcon(
+                  icon: HugeIconsStrokeRounded.downloadSquare02,
+                  size: 18,
+                ),
+                trailing: HugeIcon(
+                  icon: HugeIconsStrokeRounded.arrowRight01,
+                  size: 18,
+                ),
+                onTap: () => _showExportDialog(context, ref),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                dense: true,
+              );
+            },
           ),
         ]),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
+
+        // Sección de Backup y Restauración
+        _buildSection(
+          context,
+          SimpleLocalization.getText(ref, 'backupAndRestore'),
+          [
+            _buildListTile(
+              context,
+              ref,
+              SimpleLocalization.getText(ref, 'exportBackup'),
+              SimpleLocalization.getText(ref, 'exportBackupDescription'),
+              HugeIconsStrokeRounded.downloadSquare02,
+              () => _exportBackup(context, ref),
+            ),
+            _buildListTile(
+              context,
+              ref,
+              SimpleLocalization.getText(ref, 'importBackup'),
+              SimpleLocalization.getText(ref, 'importBackupDescription'),
+              HugeIconsStrokeRounded.databaseRestore,
+              () => _importBackup(context, ref),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de Privacidad
         _buildSection(
@@ -284,7 +326,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de App
         _buildSection(context, SimpleLocalization.getText(ref, 'settingsApp'), [
@@ -315,7 +357,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ]),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de Notificaciones
         _buildSection(
@@ -377,7 +419,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de Cuenta
         _buildSection(
@@ -397,7 +439,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de FAQ
         _buildSection(context, SimpleLocalization.getText(ref, 'faq'), [
@@ -411,7 +453,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ]),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // Sección de Soporte
         _buildSection(context, SimpleLocalization.getText(ref, 'support'), [
@@ -452,18 +494,38 @@ class SettingsScreen extends ConsumerWidget {
     String title,
     List<Widget> children,
   ) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.primary,
+            color: theme.colorScheme.primary,
           ),
         ),
-        const SizedBox(height: AppConstants.smallPadding),
-        Card(child: Column(children: children)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1)
+                  Divider(
+                    height: 1,
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -477,13 +539,19 @@ class SettingsScreen extends ConsumerWidget {
     Function(bool) onChanged, {
     bool enabled = true,
   }) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: HugeIcon(icon: icon, size: 20),
-      title: Text(title),
+      leading: HugeIcon(icon: icon, size: 18),
+      title: Text(title, style: theme.textTheme.bodyMedium),
       subtitle: enabled
           ? null
-          : Text(SimpleLocalization.getText(ref, 'requiresPremium')),
+          : Text(
+              SimpleLocalization.getText(ref, 'requiresPremium'),
+              style: theme.textTheme.bodySmall,
+            ),
       trailing: Switch(value: value, onChanged: enabled ? onChanged : null),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      dense: true,
     );
   }
 
@@ -495,12 +563,15 @@ class SettingsScreen extends ConsumerWidget {
     List<List<dynamic>> icon,
     VoidCallback onTap,
   ) {
+    final theme = Theme.of(context);
     return ListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
-      leading: HugeIcon(icon: icon, size: 20),
-      trailing: HugeIcon(icon: HugeIconsStrokeRounded.arrowRight01, size: 20),
+      title: Text(title, style: theme.textTheme.bodyMedium),
+      subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
+      leading: HugeIcon(icon: icon, size: 18),
+      trailing: HugeIcon(icon: HugeIconsStrokeRounded.arrowRight01, size: 18),
       onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      dense: true,
     );
   }
 
@@ -512,16 +583,46 @@ class SettingsScreen extends ConsumerWidget {
     List<List<dynamic>> icon,
     VoidCallback onTap,
   ) {
+    final theme = Theme.of(context);
     return ListTile(
-      title: Text(title),
-      subtitle: Text(value),
-      leading: HugeIcon(icon: icon, size: 20),
-      trailing: HugeIcon(icon: HugeIconsStrokeRounded.arrowRight01, size: 20),
+      title: Text(title, style: theme.textTheme.bodyMedium),
+      subtitle: Text(value, style: theme.textTheme.bodySmall),
+      leading: HugeIcon(icon: icon, size: 18),
+      trailing: HugeIcon(icon: HugeIconsStrokeRounded.arrowRight01, size: 18),
       onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      dense: true,
     );
   }
 
   // Métodos de diálogos
+  Widget _buildCompactRadioListTile<T>({
+    required BuildContext context,
+    required String title,
+    required T value,
+    required T? groupValue,
+    required ValueChanged<T?> onChanged,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () => onChanged(value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Radio<T>(
+              value: value,
+              groupValue: groupValue,
+              onChanged: onChanged,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            Expanded(child: Text(title, style: theme.textTheme.bodyMedium)),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCurrencyDialog(BuildContext context, WidgetRef ref) {
     final currencies = {
       'USD': '${SimpleLocalization.getText(ref, 'dollars')} (\$)',
@@ -531,16 +632,23 @@ class SettingsScreen extends ConsumerWidget {
       'CAD': '${SimpleLocalization.getText(ref, 'canadianDollars')} (C\$)',
       'AUD': '${SimpleLocalization.getText(ref, 'australianDollars')} (A\$)',
     };
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'selectCurrency')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'selectCurrency'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: currencies.entries.map((entry) {
-            return RadioListTile<String>(
-              title: Text(entry.value),
+            return _buildCompactRadioListTile<String>(
+              context: context,
+              title: entry.value,
               value: entry.key,
               groupValue: ref.read(appConfigProvider).currency,
               onChanged: (value) {
@@ -562,16 +670,23 @@ class SettingsScreen extends ConsumerWidget {
       'MM/DD/YYYY': 'MM/DD/YYYY (12/25/2024)',
       'YYYY-MM-DD': 'YYYY-MM-DD (2024-12-25)',
     };
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'dateFormat')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'dateFormat'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: formats.entries.map((entry) {
-            return RadioListTile<String>(
-              title: Text(entry.value),
+            return _buildCompactRadioListTile<String>(
+              context: context,
+              title: entry.value,
               value: entry.key,
               groupValue: ref.read(appConfigProvider).dateFormat,
               onChanged: (value) {
@@ -588,15 +703,22 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showDecimalSeparatorDialog(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'decimalSeparator')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'decimalSeparator'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            RadioListTile<String>(
-              title: const Text('Punto (.) - 1,234.56'),
+            _buildCompactRadioListTile<String>(
+              context: context,
+              title: 'Punto (.) - 1,234.56',
               value: '.',
               groupValue: ref.read(appConfigProvider).decimalSeparator,
               onChanged: (value) {
@@ -608,8 +730,9 @@ class SettingsScreen extends ConsumerWidget {
                 }
               },
             ),
-            RadioListTile<String>(
-              title: const Text('Coma (,) - 1.234,56'),
+            _buildCompactRadioListTile<String>(
+              context: context,
+              title: 'Coma (,) - 1.234,56',
               value: ',',
               groupValue: ref.read(appConfigProvider).decimalSeparator,
               onChanged: (value) {
@@ -629,16 +752,23 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showFontSizeDialog(BuildContext context, WidgetRef ref) {
     final sizes = {'small': 'Pequeño', 'normal': 'Normal', 'large': 'Grande'};
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'fontSize')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'fontSize'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: sizes.entries.map((entry) {
-            return RadioListTile<String>(
-              title: Text(entry.value),
+            return _buildCompactRadioListTile<String>(
+              context: context,
+              title: entry.value,
               value: entry.key,
               groupValue: ref.read(appConfigProvider).fontSize,
               onChanged: (value) {
@@ -656,16 +786,23 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showLanguageDialog(BuildContext context, WidgetRef ref) {
     final languages = {'es': 'Español', 'en': 'English'};
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'language')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'language'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: languages.entries.map((entry) {
-            return RadioListTile<String>(
-              title: Text(entry.value),
+            return _buildCompactRadioListTile<String>(
+              context: context,
+              title: entry.value,
               value: entry.key,
               groupValue: ref.read(appConfigProvider).language,
               onChanged: (value) async {
@@ -689,64 +826,85 @@ class SettingsScreen extends ConsumerWidget {
     final days = [1, 3, 7, 14, 30];
     final isPremium = ref.read(isPremiumProvider);
     final currentDays = ref.read(appConfigProvider).subscriptionReminderDays;
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'subscriptionReminders')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'subscriptionReminders'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: days.map((day) {
             final isPremiumOption = day > 1;
             final isEnabled = isPremium || !isPremiumOption;
+            final dayText =
+                '$day ${day == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'before')}';
 
-            return RadioListTile<int>(
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '$day ${day == 1 ? SimpleLocalization.getText(ref, 'day') : SimpleLocalization.getText(ref, 'days')} ${SimpleLocalization.getText(ref, 'before')}',
-                      style: TextStyle(
-                        color: isEnabled
-                            ? null
-                            : Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(0.38),
+            return InkWell(
+              onTap: isEnabled
+                  ? () async {
+                      await ref
+                          .read(appConfigProvider.notifier)
+                          .updateSubscriptionReminderDays(day);
+                      final subscriptions = ref.read(subscriptionsProvider);
+                      await TimerService.scheduleAllSubscriptionReminders(
+                        subscriptions,
+                      );
+                      Navigator.pop(context);
+                    }
+                  : () => _showPremiumRequiredDialog(context, ref),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Radio<int>(
+                      value: day,
+                      groupValue: currentDays,
+                      onChanged: isEnabled
+                          ? (value) async {
+                              if (value != null) {
+                                await ref
+                                    .read(appConfigProvider.notifier)
+                                    .updateSubscriptionReminderDays(value);
+                                final subscriptions = ref.read(
+                                  subscriptionsProvider,
+                                );
+                                await TimerService.scheduleAllSubscriptionReminders(
+                                  subscriptions,
+                                );
+                                Navigator.pop(context);
+                              }
+                            }
+                          : (value) => _showPremiumRequiredDialog(context, ref),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    Expanded(
+                      child: Text(
+                        dayText,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isEnabled
+                              ? null
+                              : theme.colorScheme.onSurface.withOpacity(0.38),
+                        ),
                       ),
                     ),
-                  ),
-                  if (isPremiumOption && !isPremium) ...[
-                    const SizedBox(width: 8),
-                    HugeIcon(
-                      icon: HugeIconsStrokeRounded.star,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    if (isPremiumOption && !isPremium)
+                      HugeIcon(
+                        icon: HugeIconsStrokeRounded.star,
+                        size: 14,
+                        color: theme.colorScheme.primary,
+                      ),
                   ],
-                ],
+                ),
               ),
-              value: day,
-              groupValue: currentDays,
-              onChanged: isEnabled
-                  ? (value) async {
-                      if (value != null) {
-                        await ref
-                            .read(appConfigProvider.notifier)
-                            .updateSubscriptionReminderDays(value);
-
-                        // Reprogramar todos los recordatorios con la nueva configuración
-                        final subscriptions = ref.read(subscriptionsProvider);
-                        await TimerService.scheduleAllSubscriptionReminders(
-                          subscriptions,
-                        );
-
-                        Navigator.pop(context);
-                      }
-                    }
-                  : (value) {
-                      // Mostrar mensaje de que requiere premium
-                      _showPremiumRequiredDialog(context, ref);
-                    },
             );
           }).toList(),
         ),
@@ -790,6 +948,255 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _exportBackup(BuildContext context, WidgetRef ref) async {
+    try {
+      // Mostrar indicador de carga
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Exportar backup
+      final filePath = await BackupService.exportBackup();
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar indicador de carga
+
+      if (filePath != null) {
+        // Mostrar opciones: compartir o guardar
+        if (!context.mounted) return;
+        final action = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              SimpleLocalization.getText(ref, 'backupExportedSuccessfully'),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(SimpleLocalization.getText(ref, 'backupExportedMessage')),
+                const SizedBox(height: 16),
+                if (Platform.isAndroid)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          SimpleLocalization.getText(ref, 'saveLocation'),
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${filePath.split('/').last}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'share'),
+                child: Text(SimpleLocalization.getText(ref, 'share')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'cancel'),
+                child: Text(SimpleLocalization.getText(ref, 'cancel')),
+              ),
+            ],
+          ),
+        );
+
+        if (action == 'share') {
+          await BackupService.shareBackup(filePath);
+        }
+
+        if (action != 'cancel' && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                SimpleLocalization.getText(ref, 'backupExportedSuccessfully'),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Cerrar indicador de carga si está abierto
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${SimpleLocalization.getText(ref, 'errorExportingBackup')}: $e',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _importBackup(BuildContext context, WidgetRef ref) async {
+    try {
+      // Mostrar diálogo de confirmación
+      if (!context.mounted) return;
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(SimpleLocalization.getText(ref, 'importBackup')),
+          content: Text(SimpleLocalization.getText(ref, 'importBackupWarning')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(SimpleLocalization.getText(ref, 'cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text(SimpleLocalization.getText(ref, 'continue')),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      // Mostrar indicador de carga
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Importar backup
+      final importResult = await BackupService.importBackup();
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar indicador de carga
+
+      // Mostrar resumen de datos a importar
+      if (!context.mounted) return;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(SimpleLocalization.getText(ref, 'backupContent')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(SimpleLocalization.getText(ref, 'backupContains')),
+              const SizedBox(height: 16),
+              if (importResult['transactions'] > 0)
+                Text(
+                  '• ${SimpleLocalization.getText(ref, 'transactions')}: ${importResult['transactions']}',
+                ),
+              if (importResult['categories'] > 0)
+                Text(
+                  '• ${SimpleLocalization.getText(ref, 'categories')}: ${importResult['categories']}',
+                ),
+              if (importResult['subscriptions'] > 0)
+                Text(
+                  '• ${SimpleLocalization.getText(ref, 'subscriptions')}: ${importResult['subscriptions']}',
+                ),
+              if (importResult['recurringPayments'] > 0)
+                Text(
+                  '• ${SimpleLocalization.getText(ref, 'recurringPayments')}: ${importResult['recurringPayments']}',
+                ),
+              if (importResult['accounts'] > 0)
+                Text(
+                  '• ${SimpleLocalization.getText(ref, 'accounts')}: ${importResult['accounts']}',
+                ),
+              const SizedBox(height: 16),
+              Text(
+                SimpleLocalization.getText(ref, 'restoreBackupWarning'),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(SimpleLocalization.getText(ref, 'cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text(SimpleLocalization.getText(ref, 'restore')),
+            ),
+          ],
+        ),
+      );
+
+      if (proceed != true) return;
+
+      // Mostrar indicador de carga para restaurar
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Restaurar backup
+      await BackupService.restoreBackup(importResult['backupData']);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar indicador de carga
+
+      // Mostrar mensaje de éxito
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            SimpleLocalization.getText(ref, 'backupRestoredSuccessfully'),
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Recargar datos
+      ref.invalidate(transactionsProvider);
+      ref.invalidate(subscriptionsProvider);
+      ref.invalidate(categoriesProvider);
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Cerrar indicador de carga si está abierto
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${SimpleLocalization.getText(ref, 'errorImportingBackup')}: $e',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showExportPremiumRequiredDialog(BuildContext context, WidgetRef ref) {
@@ -911,8 +1318,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Verifica que las suscripciones estén activas en Play Console',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
@@ -957,8 +1363,7 @@ class SettingsScreen extends ConsumerWidget {
                   if (notFoundIds.isNotEmpty)
                     Text(
                       'IDs no encontrados: ${notFoundIds.join(", ")}',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
@@ -966,8 +1371,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Asegúrate de que las suscripciones estén activas y publicadas en Play Console',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
@@ -994,8 +1398,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(
                     SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -1089,10 +1492,9 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(width: 8),
               Text(
                 SimpleLocalization.getText(ref, 'premiumActive'),
-                style: TextStyle(
+                style: theme.textTheme.titleMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
                 ),
               ),
             ],
@@ -1103,9 +1505,8 @@ class SettingsScreen extends ConsumerWidget {
         // Título de funciones premium
         Text(
           SimpleLocalization.getText(ref, 'premiumFeaturesIncluded'),
-          style: TextStyle(
+          style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 16,
             color: theme.colorScheme.onSurface,
           ),
         ),
@@ -1203,7 +1604,9 @@ class SettingsScreen extends ConsumerWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
         Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20),
@@ -1233,16 +1636,14 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                     ),
                   ),
                   if (isBestValue)
                     Text(
                       SimpleLocalization.getText(ref, 'bestValue'),
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1251,10 +1652,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
               Text(
                 price,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -1616,21 +2016,21 @@ class SettingsScreen extends ConsumerWidget {
                       children: [
                         Text(
                           SimpleLocalization.getText(ref, 'saveLocation'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Downloads/$fileName',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -1696,7 +2096,7 @@ class SettingsScreen extends ConsumerWidget {
                           ref,
                           'locationDownloads',
                         ).replaceAll('{fileName}', savedFileName),
-                        style: const TextStyle(fontSize: 12),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -2008,16 +2408,23 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showWeekStartDialog(BuildContext context, WidgetRef ref) {
     final appConfig = ref.read(appConfigProvider);
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(SimpleLocalization.getText(ref, 'weekStart')),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        title: Text(
+          SimpleLocalization.getText(ref, 'weekStart'),
+          style: theme.textTheme.titleMedium,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            RadioListTile<bool>(
-              title: Text(SimpleLocalization.getText(ref, 'monday')),
+            _buildCompactRadioListTile<bool>(
+              context: context,
+              title: SimpleLocalization.getText(ref, 'monday'),
               value: true,
               groupValue: appConfig.weekStartsOnMonday,
               onChanged: (value) {
@@ -2028,10 +2435,10 @@ class SettingsScreen extends ConsumerWidget {
                       .updateWeekStartsOnMonday(value);
                 }
               },
-              selected: appConfig.weekStartsOnMonday == true,
             ),
-            RadioListTile<bool>(
-              title: Text(SimpleLocalization.getText(ref, 'sunday')),
+            _buildCompactRadioListTile<bool>(
+              context: context,
+              title: SimpleLocalization.getText(ref, 'sunday'),
               value: false,
               groupValue: appConfig.weekStartsOnMonday,
               onChanged: (value) {
@@ -2042,7 +2449,6 @@ class SettingsScreen extends ConsumerWidget {
                       .updateWeekStartsOnMonday(value);
                 }
               },
-              selected: appConfig.weekStartsOnMonday == false,
             ),
           ],
         ),

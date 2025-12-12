@@ -37,6 +37,7 @@ class SimpleLocalization {
       'eng': 'Edit Subscription',
     },
     'delete': {'esp': 'Eliminar', 'eng': 'Delete'},
+    'edit': {'esp': 'Editar', 'eng': 'Edit'},
     'cancel': {'esp': 'Cancelar', 'eng': 'Cancel'},
     'save': {'esp': 'Guardar', 'eng': 'Save'},
     'search': {'esp': 'Buscar', 'eng': 'Search'},
@@ -113,6 +114,74 @@ class SimpleLocalization {
     'exportTransactionsDescription': {
       'esp': 'Exporta tus transacciones a Excel o CSV',
       'eng': 'Export your transactions to Excel or CSV',
+    },
+    'backupAndRestore': {
+      'esp': 'Backup y Restauración',
+      'eng': 'Backup and Restore',
+    },
+    'exportBackup': {
+      'esp': 'Exportar Backup',
+      'eng': 'Export Backup',
+    },
+    'exportBackupDescription': {
+      'esp': 'Genera un archivo JSON con todos tus datos',
+      'eng': 'Generate a JSON file with all your data',
+    },
+    'importBackup': {
+      'esp': 'Importar Backup',
+      'eng': 'Import Backup',
+    },
+    'importBackupDescription': {
+      'esp': 'Restaura tus datos desde un archivo de backup',
+      'eng': 'Restore your data from a backup file',
+    },
+    'backupExportedSuccessfully': {
+      'esp': 'Backup exportado exitosamente',
+      'eng': 'Backup exported successfully',
+    },
+    'backupExportedMessage': {
+      'esp': 'Tu backup ha sido generado. ¿Qué deseas hacer?',
+      'eng': 'Your backup has been generated. What would you like to do?',
+    },
+    'errorExportingBackup': {
+      'esp': 'Error al exportar backup',
+      'eng': 'Error exporting backup',
+    },
+    'importBackupWarning': {
+      'esp': 'Esta acción reemplazará todos tus datos actuales con los datos del backup. ¿Estás seguro?',
+      'eng': 'This action will replace all your current data with the backup data. Are you sure?',
+    },
+    'backupContent': {
+      'esp': 'Contenido del Backup',
+      'eng': 'Backup Content',
+    },
+    'backupContains': {
+      'esp': 'El backup contiene:',
+      'eng': 'The backup contains:',
+    },
+    'recurringPayments': {
+      'esp': 'Pagos Recurrentes',
+      'eng': 'Recurring Payments',
+    },
+    'accounts': {
+      'esp': 'Cuentas',
+      'eng': 'Accounts',
+    },
+    'restoreBackupWarning': {
+      'esp': 'ADVERTENCIA: Esta acción reemplazará todos tus datos actuales.',
+      'eng': 'WARNING: This action will replace all your current data.',
+    },
+    'backupRestoredSuccessfully': {
+      'esp': 'Backup restaurado exitosamente',
+      'eng': 'Backup restored successfully',
+    },
+    'errorImportingBackup': {
+      'esp': 'Error al importar backup',
+      'eng': 'Error importing backup',
+    },
+    'continue': {
+      'esp': 'Continuar',
+      'eng': 'Continue',
     },
     'subscriptionReminders': {
       'esp': 'Recordatorio de Suscripciones',
@@ -217,6 +286,10 @@ class SimpleLocalization {
       'esp': 'Eliminar Transacción',
       'eng': 'Delete Transaction',
     },
+    'deleteTransactionConfirm': {
+      'esp': '¿Estás seguro de que quieres eliminar "{title}"?',
+      'eng': 'Are you sure you want to delete "{title}"?',
+    },
     'all': {'esp': 'Todas', 'eng': 'All'},
     'searchSubscriptions': {
       'esp': 'Buscar suscripciones...',
@@ -248,6 +321,10 @@ class SimpleLocalization {
     },
     'markedAsPaid': {'esp': 'marcada como pagada', 'eng': 'marked as paid'},
     'undo': {'esp': 'Deshacer', 'eng': 'Undo'},
+    'transactionDeleted': {
+      'esp': 'Transacción eliminada',
+      'eng': 'Transaction deleted',
+    },
     'deleteSubscription': {
       'esp': 'Eliminar Suscripción',
       'eng': 'Delete Subscription',
@@ -511,7 +588,6 @@ class SimpleLocalization {
       'eng': 'Download in Excel or CSV',
     },
     'account': {'esp': 'Cuenta', 'eng': 'Account'},
-    'accounts': {'esp': 'Cuentas', 'eng': 'Accounts'},
     'accountName': {'esp': 'Nombre', 'eng': 'Name'},
     'initialBalance': {'esp': 'Balance inicial', 'eng': 'Initial Balance'},
     'accountDeleted': {'esp': 'Cuenta eliminada', 'eng': 'Account deleted'},
@@ -771,10 +847,6 @@ class SimpleLocalization {
     'appVersion': {'esp': 'Versión', 'eng': 'Version'},
     'platform': {'esp': 'Plataforma', 'eng': 'Platform'},
     'services': {'esp': 'Servicios', 'eng': 'Services'},
-    'recurringPayments': {
-      'esp': 'Pagos Recurrentes',
-      'eng': 'Recurring Payments',
-    },
     'recurringPaymentsDescription': {
       'esp': 'Gestiona facturas e ingresos recurrentes',
       'eng': 'Manage recurring bills and income',

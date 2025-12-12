@@ -162,7 +162,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
-                fontSize: 14, // Aumentado ligeramente ya que no hay icono
               ),
             ),
             const SizedBox(height: 2), // Espaciado mínimo
@@ -170,7 +169,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen>
               title,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 10,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

@@ -7,13 +7,13 @@ class AppThemeBuilder {
   static double _getFontSizeMultiplier(String fontSize) {
     switch (fontSize) {
       case 'small':
-        return 0.85;
+        return 0.75; // Más pequeño que antes (era 0.85)
       case 'normal':
-        return 1.0;
+        return 0.85; // El que era small antes (era 1.0)
       case 'large':
-        return 1.15;
+        return 1.0; // El que era normal antes (era 1.15)
       default:
-        return 1.0;
+        return 0.85; // Default al nuevo normal
     }
   }
 
